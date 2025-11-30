@@ -1,28 +1,258 @@
 <template>
-<div style="padding:16px">
-  <el-input v-model="q" placeholder="search" clearable @clear="load" style="width:300px"/>
-  <el-button @click="load">Search</el-button>
-  <div style="margin-top:12px"><h3>Recommended</h3><el-row :gutter="16"> <el-col :span="4" v-for="r in recs" :key="r.id"><el-card><div>{{r.title}}</div></el-card></el-col></el-row></div>\n<el-row :gutter="16" style="margin-top:16px">
-    <el-col :span="6" v-for="p in prods" :key="p.id">
-      <el-card>
-        <img v-if="p.images" :src='fmt(p.images.split(",")[0])' style="width:100%;height:140px;object-fit:cover"/>
-        <h3>{{p.title}}</h3>
-        <p>¥{{p.price}}</p>
-        <el-button type="primary" @click="go(p.id)">Detail</el-button>
-      </el-card>
-    </el-col>
-  </el-row>
-</div>
+  <div>
+    <!-- 頂部搜索與篩選區 -->
+    <div class="filter-section">
+      <div class="search-bar">
+        <el-input
+            v-model="q"
+            placeholder="搜索商品..."
+            size="large"
+            clearable
+            @clear="load"
+            @keyup.enter="load"
+        >
+          <template #append>
+            <el-button @click="load"><el-icon><Search /></el-icon></el-button>
+          </template>
+        </el-input>
+      </div>
+      <div class="categories">
+        <span class="label">分類：</span>
+        <el-check-tag
+            v-for="cat in categories"
+            :key="cat"
+            :checked="selectedCategory === cat"
+            @change="toggleCategory(cat)"
+            class="cat-tag"
+        >
+          {{ cat }}
+        </el-check-tag>
+      </div>
+    </div>
+
+    <!-- 推薦商品區 (僅當無搜索時顯示) -->
+    <div v-if="!q && !selectedCategory && recs.length > 0" class="section">
+      <h3 class="section-title"><el-icon><Star /></el-icon> 熱門推薦</h3>
+      <el-row :gutter="20">
+        <el-col :span="6" v-for="r in recs" :key="r.id">
+          <div class="prod-card mini" @click="go(r.id)">
+            <el-image :src="fmt(r.images ? r.images.split(',')[0] : '')" fit="cover" class="cover">
+              <template #error><div class="image-slot"><el-icon><Picture /></el-icon></div></template>
+            </el-image>
+            <div class="info">
+              <div class="title">{{ r.title }}</div>
+              <div class="price">¥{{ r.price }}</div>
+            </div>
+          </div>
+        </el-col>
+      </el-row>
+    </div>
+
+    <!-- 商品列表區 -->
+    <div class="section">
+      <h3 class="section-title">
+        {{ selectedCategory ? selectedCategory : '全部商品' }}
+      </h3>
+      <el-empty v-if="prods.length === 0" description="暫無商品" />
+      <el-row :gutter="20" v-else>
+        <el-col :xs="12" :sm="8" :md="6" v-for="p in prods" :key="p.id">
+          <el-card class="prod-card" shadow="hover" :body-style="{ padding: '0px' }" @click="go(p.id)">
+            <div class="img-wrapper">
+              <el-image
+                  :src="fmt(p.images ? p.images.split(',')[0] : '')"
+                  fit="cover"
+                  class="cover"
+                  loading="lazy"
+              >
+                <template #error>
+                  <div class="image-slot">
+                    <el-icon><Picture /></el-icon>
+                  </div>
+                </template>
+              </el-image>
+              <div class="view-count"><el-icon><View /></el-icon> {{ p.viewCount || 0 }}</div>
+            </div>
+            <div class="card-body">
+              <h3 class="title" :title="p.title">{{ p.title }}</h3>
+              <div class="meta">
+                <span class="price">¥{{ p.price }}</span>
+                <span class="time">{{ formatTime(p.createdAt) }}</span>
+              </div>
+              <div class="tags" v-if="p.category">
+                <el-tag size="small" type="info" effect="plain">{{ p.category }}</el-tag>
+              </div>
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
+    </div>
+  </div>
 </template>
-<script>
-import { list } from '../api';
-export default {
-  data(){ return { prods: [], q: '', recs: [] }},
-  async mounted(){ this.load(); const rr = await window.api.get('/prod/recommend/top'); if (rr.data.code===0) this.recs = rr.data.data },
-  methods:{
-    async load(){ const r = await list({ q: this.q }); if (r.data.code===0) this.prods = r.data.data },
-    go(id){ this.$router.push('/p/' + id) },
-    fmt(s){ if (!s) return ''; return (s.startsWith('/uploads/')? 'http://localhost:8080'+s: s) }
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { Search, Star, Picture, View } from '@element-plus/icons-vue'
+import { list } from '../api'
+
+const router = useRouter()
+const prods = ref([])
+const recs = ref([])
+const q = ref('')
+const selectedCategory = ref('')
+const categories = ['書籍', '電子產品', '生活用品', '美妝', '服飾', '其他']
+
+const load = async () => {
+  const params = { q: q.value }
+  if (selectedCategory.value) params.category = selectedCategory.value
+  const r = await list(params)
+  if (r.data.code === 0) prods.value = r.data.data
+}
+
+const toggleCategory = (cat) => {
+  selectedCategory.value = selectedCategory.value === cat ? '' : cat
+  load()
+}
+
+onMounted(async () => {
+  load()
+  const rr = await window.api.get('/prod/recommend/top')
+  if (rr.data.code === 0) recs.value = rr.data.data
+})
+
+const go = (id) => router.push('/p/' + id)
+
+const fmt = (s) => {
+  if (!s) return ''
+  return s.startsWith('/uploads/') ? 'http://localhost:8080' + s : s
+}
+
+const formatTime = (timeArr) => {
+  if (!timeArr) return ''
+  // 處理後端 LocalDateTime 數組 [2023, 11, 29, 10, 30]
+  if (Array.isArray(timeArr)) {
+    return `${timeArr[1]}/${timeArr[2]}`
   }
+  return new Date(timeArr).toLocaleDateString()
 }
 </script>
+
+<style scoped>
+.filter-section {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.05);
+}
+.search-bar {
+  max-width: 600px;
+  margin: 0 auto 20px;
+}
+.categories {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.label {
+  font-weight: bold;
+  color: #606266;
+}
+.cat-tag {
+  cursor: pointer;
+}
+.section {
+  margin-top: 30px;
+}
+.section-title {
+  font-size: 20px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #303133;
+}
+.prod-card {
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.prod-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+.img-wrapper {
+  position: relative;
+  height: 200px;
+  background: #f5f7fa;
+  overflow: hidden;
+}
+.cover {
+  width: 100%;
+  height: 100%;
+}
+.image-slot {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  font-size: 30px;
+  color: #dcdfe6;
+}
+.view-count {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.card-body {
+  padding: 12px;
+}
+.title {
+  font-size: 16px;
+  margin: 0 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #303133;
+}
+.meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+.price {
+  color: #f56c6c;
+  font-size: 18px;
+  font-weight: bold;
+}
+.time {
+  color: #909399;
+  font-size: 12px;
+}
+/* Mini card for recommendations */
+.prod-card.mini .img-wrapper {
+  height: 120px;
+}
+.prod-card.mini {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  padding: 10px;
+  border: 1px solid #ebeef5;
+}
+.prod-card.mini .info {
+  margin-top: 5px;
+}
+</style>

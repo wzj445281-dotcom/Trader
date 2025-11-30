@@ -42,4 +42,20 @@ public class JwtUtil {
             return null;
         }
     }
+
+    // 新增此方法以匹配 AuthCtrl 中的調用
+    public static String createToken(Long userId, String username) {
+        long now = System.currentTimeMillis();
+        JwtBuilder builder = Jwts.builder()
+                .setSubject(String.valueOf(userId))
+                .setIssuedAt(new Date(now))
+                .setExpiration(new Date(now + EXP))
+                .signWith(key);
+
+        if (username != null) {
+            builder.claim("username", username);
+        }
+
+        return builder.compact();
+    }
 }
