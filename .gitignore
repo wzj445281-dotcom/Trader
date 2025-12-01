@@ -1,0 +1,58 @@
+# Java编译文件
+*.class
+*.jar
+*.war
+target/
+build/
+.mvn/
+*.iml
+*.ipr
+*.iws
+out/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# 系统文件
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# 日志文件
+*.log
+logs/
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# 编译输出
+dist/
+bin/
+
+# 测试文件
+test-output/
+coverage/
+
+# 临时文件
+*.tmp
+*.temp

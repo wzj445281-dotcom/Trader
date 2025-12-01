@@ -8,6 +8,7 @@ import Notifications from './views/Notifications.vue';
 import Detail from './views/Detail.vue';
 import Publish from './views/Publish.vue';
 import Login from './views/Login.vue';
+
 const routes = [
   { path: '/admin', component: AdminDashboard, meta: { requiresAdmin: true } },
   { path: '/analytics', component: Dashboard },
@@ -19,17 +20,21 @@ const routes = [
   { path: '/publish', component: Publish },
   { path: '/login', component: Login }
 ];
-export default createRouter({ history: createWebHistory(), routes });
 
-
-// simple role guard
 const router = createRouter({ history: createWebHistory(), routes });
+
+// 簡單的角色權限守衛
 router.beforeEach((to, from, next) => {
   const requiresAdmin = to.meta && to.meta.requiresAdmin;
   if (requiresAdmin) {
-    const u = JSON.parse(localStorage.getItem('trader_user') || 'null');
-    if (!u || u.role !== 'ADMIN') return next('/login');
+    try {
+      const u = JSON.parse(localStorage.getItem('trader_user') || 'null');
+      if (!u || u.role !== 'ADMIN') return next('/login');
+    } catch (e) {
+      return next('/login');
+    }
   }
   next();
 });
+
 export default router;
