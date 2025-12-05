@@ -1,6 +1,8 @@
 {
   "name": "trader-frontend",
   "version": "0.0.1",
+  "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -10,11 +12,18 @@
     "vue": "^3.3.4",
     "vue-router": "^4.2.4",
     "axios": "^1.4.0",
+<<<<<<< HEAD
     "element-plus": "^2.3.10",
     "@element-plus/icons-vue": "^2.1.0",
     "echarts": "^5.4.2"
+=======
+    "element-plus": "^2.3.12",
+    "@element-plus/icons-vue": "^2.1.0",
+    "echarts": "^5.4.3"
+>>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
   },
   "devDependencies": {
-    "vite": "^5.0.0"
+    "vite": "^5.0.0",
+    "@vitejs/plugin-vue": "^5.0.0"
   }
 }

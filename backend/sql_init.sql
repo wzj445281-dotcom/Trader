@@ -35,15 +35,21 @@ CREATE TABLE `prod` (
   `category` varchar(100),
   `status` varchar(30),
 <<<<<<< HEAD
+<<<<<<< HEAD
   `lat` DOUBLE NULL,
   `lng` DOUBLE NULL,
   `view_count` INT DEFAULT 0,
   `created_at` datetime
 =======
+=======
+>>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
   `created_at` datetime,
   `lat` DOUBLE NULL,
   `lng` DOUBLE NULL,
   `view_count` INT DEFAULT 0
+<<<<<<< HEAD
+>>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
+=======
 >>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
 );
 -- 优化：添加常用查询索引
@@ -61,6 +67,10 @@ CREATE TABLE `fav` (
 CREATE UNIQUE INDEX idx_fav_user_prod ON `fav`(user_id, prod_id);
 CREATE INDEX idx_fav_userid ON `fav`(user_id);
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
 CREATE TABLE `refresh_token` (
   `id` bigint PRIMARY KEY AUTO_INCREMENT,
   `user_id` bigint,
@@ -85,6 +95,9 @@ INSERT INTO `prod` (id, user_id, title, descr, price, images, category, status, 
 
 
 CREATE TABLE `order_entity` (
+<<<<<<< HEAD
+>>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
+=======
 >>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
   `id` bigint PRIMARY KEY AUTO_INCREMENT,
   `buyer_id` bigint,
@@ -141,12 +154,17 @@ CREATE TABLE `price_history` (
 );
 CREATE INDEX idx_price_prod ON `price_history`(prod_id);
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
 CREATE TABLE `chat_message` (
   `id` bigint PRIMARY KEY AUTO_INCREMENT,
   `from_user_id` bigint,
   `to_user_id` bigint,
   `message` text,
   `created_at` bigint
+<<<<<<< HEAD
 <<<<<<< HEAD
 );
 CREATE INDEX idx_chat_from_to ON `chat_message`(from_user_id, to_user_id);
@@ -161,6 +179,9 @@ INSERT INTO `prod` (id, user_id, title, descr, price, images, category, status, 
 (2001, 1001, 'Calculus Textbook', 'Used calculus textbook, good condition', 30.00, '', 'Books', 'AVAILABLE', 31.2304, 121.4737, 10, NOW()) ON DUPLICATE KEY UPDATE title=title;
 INSERT INTO `prod` (id, user_id, title, descr, price, images, category, status, lat, lng, view_count, created_at) VALUES
 (2002, 1002, 'Wireless Mouse', 'Lightly used wireless mouse', 15.50, '', 'Electronics', 'AVAILABLE', 31.2310, 121.4740, 5, NOW()) ON DUPLICATE KEY UPDATE title=title;
+=======
+);
+>>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
 =======
 );
 >>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983

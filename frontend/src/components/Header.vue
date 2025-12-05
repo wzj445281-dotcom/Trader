@@ -3,15 +3,26 @@
     <div class="header-content">
       <div class="logo" @click="$router.push('/')">
         <el-icon class="logo-icon"><Goods /></el-icon>
+<<<<<<< HEAD
         <span>Trader 校园二手</span>
+=======
+        <span>Trader 校園二手</span>
+>>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
       </div>
       <div class="nav-right">
         <template v-if="user">
           <el-button link @click="$router.push('/publish')">
+<<<<<<< HEAD
             <el-icon><Plus /></el-icon> 发布闲置
           </el-button>
           <el-button link @click="$router.push('/cart')">
             <el-icon><ShoppingCart /></el-icon> 购物车
+=======
+            <el-icon><Plus /></el-icon> 發布閒置
+          </el-button>
+          <el-button link @click="$router.push('/cart')">
+            <el-icon><ShoppingCart /></el-icon> 購物車
+>>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
           </el-button>
           <el-button link @click="$router.push('/chat')">
             <el-icon><ChatDotRound /></el-icon> 消息
@@ -24,16 +35,27 @@
             </span>
             <template #dropdown>
               <el-dropdown-menu>
+<<<<<<< HEAD
                 <el-dropdown-item command="profile">个人中心</el-dropdown-item>
                 <el-dropdown-item command="notifications">通知中心</el-dropdown-item>
                 <el-dropdown-item v-if="user.role === 'ADMIN'" command="admin">后台管理</el-dropdown-item>
                 <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
+=======
+                <el-dropdown-item command="profile">個人中心</el-dropdown-item>
+                <el-dropdown-item command="notifications">通知中心</el-dropdown-item>
+                <el-dropdown-item v-if="user.role === 'ADMIN'" command="admin">後台管理</el-dropdown-item>
+                <el-dropdown-item divided command="logout">退出登入</el-dropdown-item>
+>>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
               </el-dropdown-menu>
             </template>
           </el-dropdown>
         </template>
         <template v-else>
+<<<<<<< HEAD
           <el-button type="primary" @click="$router.push('/login')">登录 / 注册</el-button>
+=======
+          <el-button type="primary" @click="$router.push('/login')">登入 / 註冊</el-button>
+>>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
         </template>
       </div>
     </div>
@@ -62,15 +84,22 @@ onMounted(() => {
 
 const handleCommand = async (command) => {
   if (command === 'logout') {
+<<<<<<< HEAD
     const refToken = localStorage.getItem('trader_refresh')
     try {
       if (refToken && window.api) await logoutApi(refToken)
+=======
+    const ref = localStorage.getItem('trader_refresh')
+    try {
+      if (ref && window.api) await logoutApi(ref)
+>>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
     } catch (e) {}
     localStorage.removeItem('trader_token')
     localStorage.removeItem('trader_refresh')
     localStorage.removeItem('trader_user')
     user.value = null
     router.push('/login')
+<<<<<<< HEAD
     window.location.reload() // 简单刷新状态
   } else if (command === 'admin') {
     router.push('/admin')
@@ -78,6 +107,13 @@ const handleCommand = async (command) => {
     // 暂时没有 profile 页面，先跳到首页或不做操作
     // router.push('/profile')
     alert('功能开发中')
+=======
+    window.location.reload() // 簡單刷新狀態
+  } else if (command === 'admin') {
+    router.push('/admin')
+  } else if (command === 'profile') {
+    router.push('/profile') // 待開發
+>>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
   } else if (command === 'notifications') {
     router.push('/notifications')
   }
@@ -94,14 +130,27 @@ const handleCommand = async (command) => {
   padding: 0;
 }
 .header-content {
+<<<<<<< HEAD
   width: 100%;
   max-width: 1200px;
+=======
+  width: 1200px;
+>>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
   margin: 0 auto;
   height: 60px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+<<<<<<< HEAD
   padding: 0 20px;
+=======
+}
+@media (max-width: 1200px) {
+  .header-content {
+    width: 100%;
+    padding: 0 20px;
+  }
+>>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
 }
 .logo {
   font-size: 20px;
@@ -125,7 +174,10 @@ const handleCommand = async (command) => {
   align-items: center;
   cursor: pointer;
   color: #606266;
+<<<<<<< HEAD
   outline: none;
+=======
+>>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
 }
 .username {
   margin: 0 8px;

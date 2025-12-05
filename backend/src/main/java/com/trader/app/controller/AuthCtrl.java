@@ -1,12 +1,15 @@
 package com.trader.app.controller;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 import com.trader.app.entity.User;
 import com.trader.app.service.AuthService;
 import com.trader.app.util.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 =======
+=======
+>>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.trader.app.entity.RefreshToken;
 import com.trader.app.entity.User;
@@ -32,6 +35,7 @@ public class AuthCtrl {
 
     @Autowired
 <<<<<<< HEAD
+<<<<<<< HEAD
     private AuthService authService;
 
     @PostMapping("/register")
@@ -43,6 +47,8 @@ public class AuthCtrl {
     public Result<Map<String, Object>> login(@RequestBody User u) {
         return Result.ok(authService.login(u.getUsername(), u.getPassword()));
 =======
+=======
+>>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
     private UserMapper userMapper;
 
     @Autowired
@@ -107,14 +113,20 @@ public class AuthCtrl {
         resp.put("refresh", refreshTokenStr);
 
         return Result.ok(resp);
+<<<<<<< HEAD
+>>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
+=======
 >>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
     }
 
     @PostMapping("/refresh")
     public Result<Map<String, String>> refresh(@RequestBody Map<String, String> body) {
 <<<<<<< HEAD
+<<<<<<< HEAD
         return Result.ok(authService.refreshToken(body.get("refresh")));
 =======
+=======
+>>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
         String ref = body.get("refresh");
         if (ref == null) return Result.fail("no refresh");
 
@@ -129,15 +141,21 @@ public class AuthCtrl {
         // 生成新的 Access Token (這裡暫時不查用戶名，使用 genToken 即可)
         String newAccess = JwtUtil.genToken(t.getUserId());
         return Result.ok(Map.of("token", newAccess));
+<<<<<<< HEAD
+>>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
+=======
 >>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
     }
 
     @PostMapping("/logout")
     public Result<String> logout(@RequestBody Map<String, String> body) {
 <<<<<<< HEAD
+<<<<<<< HEAD
         authService.logout(body.get("refresh"));
         return Result.ok("Logged out");
 =======
+=======
+>>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
         String ref = body.get("refresh");
         if (ref == null) return Result.fail("no refresh");
 
