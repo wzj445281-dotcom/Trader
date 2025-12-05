@@ -8,6 +8,8 @@ import Notifications from './views/Notifications.vue';
 import Detail from './views/Detail.vue';
 import Publish from './views/Publish.vue';
 import Login from './views/Login.vue';
+import Profile from './views/Profile.vue';
+import Payment from './views/Payment.vue'; // 新增
 
 const routes = [
   { path: '/admin', component: AdminDashboard, meta: { requiresAdmin: true } },
@@ -15,6 +17,8 @@ const routes = [
   { path: '/cart', component: Cart },
   { path: '/chat', component: Chat },
   { path: '/notifications', component: Notifications },
+  { path: '/profile', component: Profile },
+  { path: '/pay/:id', component: Payment }, // 新增
   { path: '/', component: List },
   { path: '/p/:id', component: Detail },
   { path: '/publish', component: Publish },
@@ -23,16 +27,11 @@ const routes = [
 
 const router = createRouter({ history: createWebHistory(), routes });
 
-// 簡單的角色權限守衛
 router.beforeEach((to, from, next) => {
   const requiresAdmin = to.meta && to.meta.requiresAdmin;
   if (requiresAdmin) {
-    try {
-      const u = JSON.parse(localStorage.getItem('trader_user') || 'null');
-      if (!u || u.role !== 'ADMIN') return next('/login');
-    } catch (e) {
-      return next('/login');
-    }
+    const u = JSON.parse(localStorage.getItem('trader_user') || 'null');
+    if (!u || u.role !== 'ADMIN') return next('/login');
   }
   next();
 });

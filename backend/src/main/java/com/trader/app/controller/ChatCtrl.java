@@ -1,4 +1,4 @@
-package com.trader.app.controller;
+package java.com.trader.app.controller;
 import org.springframework.web.bind.annotation.*;
 import com.trader.app.mapper.ChatMessageMapper;
 import com.trader.app.entity.ChatMessage;

@@ -1,30 +1,59 @@
-version: '3.8'
 services:
+  # 1. 数据库服务
   mysql:
     image: mysql:8.0
+    container_name: trader_mysql
     environment:
       MYSQL_ROOT_PASSWORD: "000000"
+      MYSQL_DATABASE: "trader"
+      TZ: "Asia/Shanghai"
+    command: --default-authentication-plugin=mysql_native_password
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
-      - db_data:/var/lib/mysql
+      # 持久化数据库数据到宿主机
+      - ./mysql_data:/var/lib/mysql
+      # 初始化脚本：容器首次启动时会自动执行 sql_init.sql
+      - ./backend/sql_init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # 2. 后端服务
   backend:
     build: ./backend
+    container_name: trader_backend
+    environment:
+      # 覆盖 application.yml 中的配置
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/trader?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: "000000"
+      # 这是一个强随机密钥，生产环境请修改
+      JWT_SECRET: "MySuperSecretKeyForDockerEnvChangeMe123456"
+      # 图片上传路径
+      APP_UPLOAD_DIR: "/app/uploads/"
+    volumes:
+      # 将容器内的上传目录映射到宿主机的 uploads 文件夹
+      - ./uploads:/app/uploads
     ports:
       - "8080:8080"
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/trader?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=rootpassword
-      - JWT_SECRET=ReplaceThisWithAStrongKey
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
+    restart: on-failure
+
+  # 3. 前端服务 (Nginx)
   frontend:
     build: ./frontend
+    container_name: trader_frontend
     ports:
-      - "5173:80"
+      # 宿主机访问端口 (http://localhost)
+      - "80:80"
     depends_on:
       - backend
+    restart: always
 
 volumes:
-  db_data:
+  mysql_data:

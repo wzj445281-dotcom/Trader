@@ -1,9 +1,15 @@
 import axios from 'axios';
-const api = axios.create({ baseURL: 'http://localhost:8080/api', withCredentials: true });
 
-window.api = api; // expose for simple calls in components
+// 优化：从环境变量读取 baseURL，如果在开发环境则使用默认值
+const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
-// Request interceptor: attach token
+const api = axios.create({
+  baseURL: baseURL,
+  withCredentials: true
+});
+
+window.api = api;
+
 api.interceptors.request.use(cfg => {
   const t = localStorage.getItem('trader_token');
   if (t) cfg.headers['Authorization'] = 'Bearer ' + t;
@@ -13,6 +19,7 @@ api.interceptors.request.use(cfg => {
 // Response interceptor: on 401, try refresh flow once
 let isRefreshing = false;
 let failedQueue = [];
+
 function processQueue(error, token = null) {
   failedQueue.forEach(p => (error ? p.reject(error) : p.resolve(token)));
   failedQueue = [];
@@ -24,6 +31,7 @@ api.interceptors.response.use(response => response, async error => {
     originalReq._retry = true;
     const refresh = localStorage.getItem('trader_refresh');
     if (!refresh) return Promise.reject(error);
+
     if (isRefreshing) {
       return new Promise(function(resolve, reject) {
         failedQueue.push({ resolve, reject });
@@ -32,6 +40,7 @@ api.interceptors.response.use(response => response, async error => {
         return api(originalReq);
       }).catch(err => Promise.reject(err));
     }
+
     isRefreshing = true;
     try {
       const res = await api.post('/auth/refresh', { refresh });
@@ -42,7 +51,6 @@ api.interceptors.response.use(response => response, async error => {
       return api(originalReq);
     } catch (e) {
       processQueue(e, null);
-      // clear storage and redirect to login
       localStorage.removeItem('trader_token');
       localStorage.removeItem('trader_refresh');
       localStorage.removeItem('trader_user');
@@ -65,7 +73,6 @@ export const fav = d => api.post('/prod/fav', d);
 export const favs = id => api.get('/prod/favs/' + id);
 export const refreshToken = (refresh) => api.post('/auth/refresh', { refresh });
 export const logoutApi = (refresh) => api.post('/auth/logout', { refresh });
+export const getCart = (userId) => api.get('/prod/cart/' + userId);
 
 export default api;
-
-export const getCart = (userId) => api.get('/prod/cart/' + userId);

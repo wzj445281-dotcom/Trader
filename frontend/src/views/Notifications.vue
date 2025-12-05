@@ -1,10 +1,12 @@
 <template>
-<div style="padding:16px">
-  <h2>Notifications</h2>
-  <div v-for="n in notes" :key="n.id">
-    <div><strong>{{n.title}}</strong> - {{n.body}}</div>
+  <div style="padding:16px;max-width:800px;margin:0 auto">
+    <h2>消息通知</h2>
+    <div v-if="notes.length===0" style="color:#999">暂无新通知</div>
+    <el-card v-for="n in notes" :key="n.id" style="margin-bottom:10px">
+      <div style="font-weight:bold;margin-bottom:5px">{{n.title}}</div>
+      <div style="color:#666">{{n.body}}</div>
+    </el-card>
   </div>
-</div>
 </template>
 <script>
 export default {
