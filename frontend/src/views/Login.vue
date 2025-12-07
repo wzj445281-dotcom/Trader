@@ -1,81 +1,37 @@
 <template>
-<<<<<<< HEAD
-  <div style="display:flex;justify-content:center;align-items:center;height:80vh;background-color:#f5f7fa">
-    <el-card style="width:400px;padding:20px">
-      <h2 style="text-align:center;margin-bottom:24px">欢迎登录 Trader</h2>
-      <el-form :model="f" label-width="70px">
-        <el-form-item label="用户名"><el-input v-model="f.username" placeholder="请输入用户名"/></el-form-item>
-        <el-form-item label="密码"><el-input type="password" v-model="f.password" placeholder="请输入密码" @keydown.enter="login"/></el-form-item>
-        <div style="text-align:center;margin-top:20px">
-          <el-button type="primary" style="width:100px" @click="login">登录</el-button>
-          <el-button style="width:100px" @click="reg">注册账号</el-button>
-        </div>
-      </el-form>
-    </el-card>
-  </div>
-</template>
-<script>
-import { login, register } from '../api';
-export default {
-  data(){ return { f:{ username:'', password:'' } }},
-  methods:{
-    async login(){
-      const r = await login(this.f);
-      if (r.data.code===0){
-        const data = r.data.data;
-        // 修复：统一使用 trader_token
-        localStorage.setItem('trader_token', data.token);
-        if(data.refresh) localStorage.setItem('trader_refresh', data.refresh);
-        localStorage.setItem('trader_user', JSON.stringify(data.user));
-
-        this.$message.success('登录成功');
-        window.location.href = '/'; // 刷新以更新 Header 状态
-      } else this.$message.error(r.data.msg || '登录失败');
-    },
-    async reg(){
-      const r = await register(this.f);
-      if (r.data.code===0){
-        const data = r.data.data;
-        localStorage.setItem('trader_token', data.token);
-        if(data.refresh) localStorage.setItem('trader_refresh', data.refresh);
-        localStorage.setItem('trader_user', JSON.stringify(data.user));
-        this.$message.success('注册成功，已自动登录');
-        window.location.href = '/';
-      } else this.$message.error(r.data.msg || '注册失败');
-=======
   <div class="login-wrapper">
     <div class="login-box">
       <div class="login-header">
-        <h2>歡迎來到 Trader</h2>
-        <p>校園二手好物交易平台</p>
+        <h2>欢迎来到 Trader</h2>
+        <p>校园二手好物交易平台</p>
       </div>
       <el-tabs v-model="activeTab" stretch>
         <el-tab-pane label="登入" name="login">
           <el-form :model="loginForm" :rules="rules" ref="loginFormRef" label-position="top">
-            <el-form-item label="用戶名" prop="username">
-              <el-input v-model="loginForm.username" prefix-icon="User" placeholder="請輸入用戶名" />
+            <el-form-item label="用户名" prop="username">
+              <el-input v-model="loginForm.username" prefix-icon="User" placeholder="请输入用户名" />
             </el-form-item>
-            <el-form-item label="密碼" prop="password">
-              <el-input v-model="loginForm.password" type="password" prefix-icon="Lock" show-password placeholder="請輸入密碼" @keyup.enter="handleLogin" />
+            <el-form-item label="密码" prop="password">
+              <el-input v-model="loginForm.password" type="password" prefix-icon="Lock" show-password placeholder="请输入密码" @keyup.enter="handleLogin" />
             </el-form-item>
             <el-button type="primary" class="full-btn" :loading="loading" @click="handleLogin">登入</el-button>
           </el-form>
         </el-tab-pane>
-        <el-tab-pane label="註冊" name="register">
+        <el-tab-pane label="注册" name="register">
           <el-form :model="regForm" :rules="rules" ref="regFormRef" label-position="top">
-            <el-form-item label="用戶名" prop="username">
-              <el-input v-model="regForm.username" prefix-icon="User" placeholder="設置用戶名" />
+            <el-form-item label="用户名" prop="username">
+              <el-input v-model="regForm.username" prefix-icon="User" placeholder="设置用户名" />
             </el-form-item>
-            <el-form-item label="郵箱" prop="email">
-              <el-input v-model="regForm.email" prefix-icon="Message" placeholder="常用郵箱" />
+            <el-form-item label="邮箱" prop="email">
+              <el-input v-model="regForm.email" prefix-icon="Message" placeholder="常用邮箱" />
             </el-form-item>
-            <el-form-item label="手機號" prop="phone">
-              <el-input v-model="regForm.phone" prefix-icon="Iphone" placeholder="手機號碼" />
+            <el-form-item label="手机号" prop="phone">
+              <el-input v-model="regForm.phone" prefix-icon="Iphone" placeholder="手机号码" />
             </el-form-item>
-            <el-form-item label="密碼" prop="password">
-              <el-input v-model="regForm.password" type="password" prefix-icon="Lock" show-password placeholder="設置密碼" />
+            <el-form-item label="密码" prop="password">
+              <el-input v-model="regForm.password" type="password" prefix-icon="Lock" show-password placeholder="设置密码" />
             </el-form-item>
-            <el-button type="success" class="full-btn" :loading="loading" @click="handleRegister">註冊帳號</el-button>
+            <el-button type="success" class="full-btn" :loading="loading" @click="handleRegister">注册账号</el-button>
           </el-form>
         </el-tab-pane>
       </el-tabs>
@@ -100,13 +56,13 @@ const loginForm = reactive({ username: '', password: '' })
 const regForm = reactive({ username: '', password: '', email: '', phone: '' })
 
 const rules = {
-  username: [{ required: true, message: '請輸入用戶名', trigger: 'blur' }],
-  password: [{ required: true, message: '請輸入密碼', trigger: 'blur' }],
+  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
   email: [
-    { required: true, message: '請輸入郵箱', trigger: 'blur' },
-    { type: 'email', message: '郵箱格式不正確', trigger: ['blur', 'change'] }
+    { required: true, message: '请输入邮箱', trigger: 'blur' },
+    { type: 'email', message: '邮箱格式不正确', trigger: ['blur', 'change'] }
   ],
-  phone: [{ required: true, message: '請輸入手機號', trigger: 'blur' }]
+  phone: [{ required: true, message: '请输入手机号', trigger: 'blur' }]
 }
 
 const handleLogin = async () => {
@@ -122,17 +78,15 @@ const handleLogin = async () => {
           localStorage.setItem('trader_user', JSON.stringify(r.data.data.user))
           ElMessage.success('登入成功')
           router.push('/')
-          // 為了確保 Header 組件更新狀態，可以刷新頁面或使用 EventBus/Pinia，這裡簡單處理
           setTimeout(() => window.location.reload(), 100)
         } else {
-          ElMessage.error(r.data.msg || '登入失敗')
+          ElMessage.error(r.data.msg || '登入失败')
         }
       } catch (e) {
-        ElMessage.error('網絡錯誤')
+        ElMessage.error('网络错误')
       } finally {
         loading.value = false
       }
->>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
     }
   })
 }
@@ -147,23 +101,20 @@ const handleRegister = async () => {
         if (r.data.code === 0) {
           localStorage.setItem('trader_token', r.data.data.token)
           localStorage.setItem('trader_user', JSON.stringify(r.data.data.user))
-          ElMessage.success('註冊成功，已自動登入')
+          ElMessage.success('注册成功，已自动登入')
           router.push('/')
           setTimeout(() => window.location.reload(), 100)
         } else {
-          ElMessage.error(r.data.msg || '註冊失敗')
+          ElMessage.error(r.data.msg || '注册失败')
         }
       } catch (e) {
-        ElMessage.error('網絡錯誤')
+        ElMessage.error('网络错误')
       } finally {
         loading.value = false
       }
     }
   })
 }
-<<<<<<< HEAD
-</script>
-=======
 </script>
 
 <style scoped>
@@ -197,4 +148,3 @@ const handleRegister = async () => {
   margin-top: 10px;
 }
 </style>
->>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983

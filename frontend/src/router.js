@@ -8,11 +8,8 @@ import Notifications from './views/Notifications.vue';
 import Detail from './views/Detail.vue';
 import Publish from './views/Publish.vue';
 import Login from './views/Login.vue';
-<<<<<<< HEAD
 import Profile from './views/Profile.vue';
-import Payment from './views/Payment.vue'; // 新增
-=======
->>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
+import Payment from './views/Payment.vue'; // 请确保文件已重命名为 Payment.vue
 
 const routes = [
   { path: '/admin', component: AdminDashboard, meta: { requiresAdmin: true } },
@@ -21,7 +18,7 @@ const routes = [
   { path: '/chat', component: Chat },
   { path: '/notifications', component: Notifications },
   { path: '/profile', component: Profile },
-  { path: '/pay/:id', component: Payment }, // 新增
+  { path: '/pay/:id', component: Payment },
   { path: '/', component: List },
   { path: '/p/:id', component: Detail },
   { path: '/publish', component: Publish },
@@ -30,10 +27,6 @@ const routes = [
 
 const router = createRouter({ history: createWebHistory(), routes });
 
-<<<<<<< HEAD
-=======
-// 簡單的角色權限守衛
->>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
 router.beforeEach((to, from, next) => {
   const requiresAdmin = to.meta && to.meta.requiresAdmin;
   if (requiresAdmin) {

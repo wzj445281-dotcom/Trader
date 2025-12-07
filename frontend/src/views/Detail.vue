@@ -1,91 +1,12 @@
 <template>
-<<<<<<< HEAD
-  <div style="padding:16px;max-width:800px;margin:0 auto">
-    <el-page-header @back="$router.back()" content="商品详情" style="margin-bottom:20px"></el-page-header>
-
-    <div v-if="p">
-      <el-card>
-        <h1 style="margin:0 0 16px 0">{{p.title}}</h1>
-        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px" v-if="p.images">
-          <img v-for="s in p.images.split(',')" :src="fmt(s)" :key="s" style="max-width:100%;max-height:400px;border-radius:4px;border:1px solid #eee"/>
-        </div>
-
-        <div style="background:#f9f9f9;padding:16px;border-radius:8px;margin-bottom:20px">
-          <div style="font-size:24px;color:#F56C6C;font-weight:bold;margin-bottom:10px">¥{{p.price}}</div>
-          <div style="color:#666;line-height:1.6">{{p.descr}}</div>
-          <div style="margin-top:10px;color:#999;font-size:12px">分类: <el-tag size="small">{{p.category}}</el-tag></div>
-        </div>
-
-        <div style="display:flex;gap:10px;margin-bottom:30px">
-          <el-button type="warning" icon="el-icon-star-off" @click="favIt">收藏商品</el-button>
-          <el-button type="success" icon="el-icon-chat-dot-round" @click="$router.push('/chat')">联系卖家</el-button>
-        </div>
-
-        <el-divider></el-divider>
-
-        <h3>商品评论 ({{comments.length}})</h3>
-        <div v-if="comments.length===0" style="color:#999;margin-bottom:20px">暂无评论</div>
-        <div v-for="c in comments" :key="c.id" style="border-bottom:1px solid #eee;padding:12px 0">
-          <div style="display:flex;align-items:center;margin-bottom:5px">
-            <el-rate v-model="c.rating" disabled show-score text-color="#ff9900"></el-rate>
-            <span style="color:#999;font-size:12px;margin-left:10px">{{new Date(c.createdAt).toLocaleString()}}</span>
-          </div>
-          <div>{{c.content}}</div>
-        </div>
-
-        <div style="margin-top:20px;background:#f5f7fa;padding:20px;border-radius:4px">
-          <h4>发表评论</h4>
-          <el-input type="textarea" v-model="newComment" placeholder="请输入你的评价..." rows="3"></el-input>
-          <div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between">
-            <div style="display:flex;align-items:center">评分: <el-rate v-model="newRating" style="margin-left:8px"></el-rate></div>
-            <el-button type="primary" @click="postComment">提交评价</el-button>
-          </div>
-        </div>
-      </el-card>
-    </div>
-  </div>
-</template>
-<script>
-import { detail, fav } from '../api';
-export default {
-  data(){ return { p: null, comments: [], newComment: '', newRating:5 }},
-  async mounted(){
-    const r = await detail(this.$route.params.id);
-    if (r.data.code===0) this.p = r.data.data;
-    const rc = await window.api.get('/prod/comments/' + this.$route.params.id);
-    if (rc.data.code===0) this.comments = rc.data.data
-  },
-  methods:{
-    async postComment(){
-      const user = JSON.parse(localStorage.getItem('trader_user')||'null');
-      if (!user) { this.$message.error('请先登录'); return;}
-      const payload = { userId: user.id, prodId: this.p.id, content: this.newComment, rating: this.newRating };
-      const r = await window.api.post('/prod/comment', payload);
-      if (r.data.code===0){
-        this.$message.success('评论发布成功');
-        this.comments.push({...payload, createdAt: Date.now()});
-        this.newComment='';
-      }
-    },
-    fmt(s){ if (!s) return ''; return s.startsWith('/uploads/')? 'http://localhost:8080'+s: s },
-    async favIt(){
-      const r = await fav({ prodId: this.p.id });
-      if (r.data.code===0) this.$message.success('收藏成功');
-      else this.$message.error(r.data.msg)
-    }
-  }
-}
-</script>
-=======
   <div v-if="p" class="detail-container">
     <el-breadcrumb separator="/" class="breadcrumb">
-      <el-breadcrumb-item :to="{ path: '/' }">首頁</el-breadcrumb-item>
+      <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
       <el-breadcrumb-item>{{ p.category || '商品' }}</el-breadcrumb-item>
-      <el-breadcrumb-item>詳情</el-breadcrumb-item>
+      <el-breadcrumb-item>详情</el-breadcrumb-item>
     </el-breadcrumb>
 
     <div class="product-main">
-      <!-- 左側圖片 -->
       <div class="gallery">
         <el-image
             v-if="currentImg"
@@ -107,34 +28,33 @@ export default {
         </div>
       </div>
 
-      <!-- 右側信息 -->
       <div class="info-col">
         <h1 class="title">{{ p.title }}</h1>
         <div class="price-box">
           <span class="currency">¥</span>
           <span class="amount">{{ p.price }}</span>
-          <div class="view-info"><el-icon><View /></el-icon> {{ p.viewCount }} 次瀏覽</div>
+          <div class="view-info"><el-icon><View /></el-icon> {{ p.viewCount }} 次浏览</div>
         </div>
 
         <div class="meta-info">
           <div class="meta-item">
-            <span class="label">分類：</span>
+            <span class="label">分类：</span>
             <span>{{ p.category }}</span>
           </div>
           <div class="meta-item">
-            <span class="label">狀態：</span>
+            <span class="label">状态：</span>
             <el-tag type="success">{{ p.status }}</el-tag>
           </div>
           <div class="meta-item">
-            <span class="label">發布時間：</span>
+            <span class="label">发布时间：</span>
             <span>{{ formatTime(p.createdAt) }}</span>
           </div>
         </div>
 
         <div class="actions">
-          <el-button type="danger" size="large" icon="ShoppingCart" @click="handleBuy">立即購買</el-button>
+          <el-button type="danger" size="large" icon="ShoppingCart" @click="handleBuy">立即购买</el-button>
           <el-button type="primary" size="large" plain icon="Star" @click="favIt">收藏</el-button>
-          <el-button size="large" icon="ChatDotRound" @click="contactSeller">聯繫賣家</el-button>
+          <el-button size="large" icon="ChatDotRound" @click="contactSeller">联系卖家</el-button>
         </div>
 
         <el-divider content-position="left">商品描述</el-divider>
@@ -144,26 +64,25 @@ export default {
       </div>
     </div>
 
-    <!-- 評論區 -->
     <div class="comments-section">
-      <h3>留言區</h3>
+      <h3>留言区</h3>
       <div class="comment-input">
         <el-input
             v-model="newComment"
             type="textarea"
             :rows="3"
-            placeholder="對這件商品感興趣？留言問問吧..."
+            placeholder="对这件商品感兴趣？留言问问吧..."
         />
         <div class="comment-tools">
           <el-rate v-model="newRating" />
-          <el-button type="primary" @click="postComment">發布留言</el-button>
+          <el-button type="primary" @click="postComment">发布留言</el-button>
         </div>
       </div>
 
       <div class="comment-list">
         <div v-for="c in comments" :key="c.id" class="comment-item">
           <div class="comment-header">
-            <span class="comment-user">用戶 {{ c.userId }}</span>
+            <span class="comment-user">用户 {{ c.userId }}</span>
             <el-rate v-model="c.rating" disabled size="small" />
             <span class="comment-time">{{ formatTime(c.createdAt) }}</span>
           </div>
@@ -172,7 +91,7 @@ export default {
       </div>
     </div>
   </div>
-  <el-empty v-else description="加載中..." />
+  <el-empty v-else description="加载中..." />
 </template>
 
 <script setup>
@@ -190,12 +109,12 @@ const newComment = ref('')
 const newRating = ref(5)
 const currentImg = ref('')
 
-// 計算屬性
+// 计算属性
 const imgList = computed(() => p.value?.images ? p.value.images.split(',') : [])
 
 onMounted(async () => {
   await loadData()
-  // 記錄瀏覽
+  // 记录浏览
   if (p.value) window.api.post('/prod/view/' + p.value.id)
 })
 
@@ -216,14 +135,14 @@ const fmt = (s) => {
 
 const formatTime = (time) => {
   if (!time) return ''
-  // 簡單處理時間格式
+  // 简单处理时间格式
   if (Array.isArray(time)) return `${time[0]}-${time[1]}-${time[2]}`
   return new Date(time).toLocaleDateString()
 }
 
 const favIt = async () => {
   const user = JSON.parse(localStorage.getItem('trader_user'))
-  if (!user) { ElMessage.warning('請先登入'); return router.push('/login') }
+  if (!user) { ElMessage.warning('请先登录'); return router.push('/login') }
   const r = await fav({ prodId: p.value.id })
   if (r.data.code === 0) ElMessage.success('已加入收藏')
   else ElMessage.error(r.data.msg)
@@ -231,15 +150,15 @@ const favIt = async () => {
 
 const postComment = async () => {
   const user = JSON.parse(localStorage.getItem('trader_user'))
-  if (!user) { ElMessage.warning('請先登入'); return router.push('/login') }
-  if (!newComment.value.trim()) return ElMessage.warning('請輸入內容')
+  if (!user) { ElMessage.warning('请先登录'); return router.push('/login') }
+  if (!newComment.value.trim()) return ElMessage.warning('请输入内容')
 
   const payload = { userId: user.id, prodId: p.value.id, content: newComment.value, rating: newRating.value }
   const r = await window.api.post('/prod/comment', payload)
   if (r.data.code === 0) {
     ElMessage.success('留言成功')
     newComment.value = ''
-    // 重新加載評論
+    // 重新加载评论
     const rc = await window.api.get('/prod/comments/' + p.value.id)
     if (rc.data.code === 0) comments.value = rc.data.data
   }
@@ -247,12 +166,12 @@ const postComment = async () => {
 
 const handleBuy = async () => {
   const user = JSON.parse(localStorage.getItem('trader_user'))
-  if (!user) { ElMessage.warning('請先登入'); return router.push('/login') }
+  if (!user) { ElMessage.warning('请先登录'); return router.push('/login') }
 
-  // 簡單添加到購物車邏輯
+  // 简单添加到购物车逻辑
   const r = await window.api.post('/prod/cart/add', { userId: user.id, prodId: p.value.id, qty: 1 })
   if (r.data.code === 0) {
-    ElMessage.success('已加入購物車')
+    ElMessage.success('已加入购物车')
     router.push('/cart')
   } else {
     ElMessage.error(r.data.msg)
@@ -262,10 +181,9 @@ const handleBuy = async () => {
 const contactSeller = () => {
   const user = JSON.parse(localStorage.getItem('trader_user'))
   if (!user) return router.push('/login')
-  // 跳轉到聊天頁面，並帶上對方ID（假設 p.userId 存在）
-  // 這裡需要後續完善 Chat 頁面支持 query 參數
+  // 跳转到聊天页面
   router.push('/chat')
-  ElMessage.info('聊天功能開發中，請先進入聊天室列表')
+  ElMessage.info('聊天功能开发中，请先进入聊天室列表')
 }
 </script>
 
@@ -407,4 +325,3 @@ const contactSeller = () => {
   color: #606266;
 }
 </style>
->>>>>>> 98ed80e20ee63afeaa8c46ff01e529e91f6f6983
