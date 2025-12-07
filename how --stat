@@ -1,0 +1,65 @@
+[33mcommit 526eef0195b654d535775842aac4bd66203b9e56[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: Y.L <wzj445281@gmail.com>
+Date:   Mon Dec 1 22:05:00 2025 +0800
+
+    清理仓库：只保留源码文件，移除编译输出和IDE配置
+
+ .gitignore                                         |  58 [32m+++[m
+ .idea/.gitignore                                   |  10 [31m-[m
+ .idea/compiler.xml                                 |  18 [31m-[m
+ .idea/dbnavigator.xml                              | 446 [31m---------------------[m
+ .idea/encodings.xml                                |   6 [31m-[m
+ .idea/jarRepositories.xml                          |  25 [31m--[m
+ .idea/misc.xml                                     |  14 [31m-[m
+ .idea/modules.xml                                  |   9 [31m-[m
+ .idea/trader_project.iml                           |   9 [31m-[m
+ backend/sql_init.sql                               |  53 [32m++[m[31m-[m
+ .../java/com/trader/app/config/ChatHandler.java    | 115 [32m++++[m[31m--[m
+ .../main/java/com/trader/app/config/CorsCfg.java   |  10 [32m+[m[31m-[m
+ .../java/com/trader/app/config/SecurityCfg.java    |  37 [32m+[m[31m-[m
+ .../java/com/trader/app/config/WebSocketCfg.java   |  12 [32m+[m[31m-[m
+ .../java/com/trader/app/controller/AuthCtrl.java   |  90 [32m+++[m[31m--[m
+ .../src/main/java/com/trader/app/util/JwtUtil.java |  16 [32m+[m
+ backend/src/main/resources/application.yml         |   2 [32m+[m[31m-[m
+ backend/target/classes/application.yml             |  22 [31m-[m
+ .../classes/com/trader/app/config/JwtFilter.class  | Bin [31m2037[m -> [32m0[m bytes
+ .../trader/app/controller/AdminReportCtrl.class    | Bin [31m2337[m -> [32m0[m bytes
+ .../com/trader/app/controller/ChatCtrl.class       | Bin [31m2027[m -> [32m0[m bytes
+ .../com/trader/app/controller/ProdCtrl.class       | Bin [31m19395[m -> [32m0[m bytes
+ .../classes/com/trader/app/entity/CartItem.class   | Bin [31m3079[m -> [32m0[m bytes
+ .../com/trader/app/entity/ChatMessage.class        | Bin [31m3591[m -> [32m0[m bytes
+ .../classes/com/trader/app/entity/Comment.class    | Bin [31m4049[m -> [32m0[m bytes
+ .../target/classes/com/trader/app/entity/Fav.class | Bin [31m2664[m -> [32m0[m bytes
+ .../com/trader/app/entity/Notification.class       | Bin [31m4029[m -> [32m0[m bytes
+ .../com/trader/app/entity/OrderEntity.class        | Bin [31m4516[m -> [32m0[m bytes
+ .../com/trader/app/entity/PriceHistory.class       | Bin [31m3126[m -> [32m0[m bytes
+ .../classes/com/trader/app/entity/Prod.class       | Bin [31m7121[m -> [32m0[m bytes
+ .../classes/com/trader/app/entity/Report.class     | Bin [31m3994[m -> [32m0[m bytes
+ .../classes/com/trader/app/entity/User.class       | Bin [31m3674[m -> [32m0[m bytes
+ .../com/trader/app/mapper/CartItemMapper.class     | Bin [31m391[m -> [32m0[m bytes
+ .../com/trader/app/mapper/ChatMessageMapper.class  | Bin [31m400[m -> [32m0[m bytes
+ .../com/trader/app/mapper/CommentMapper.class      | Bin [31m388[m -> [32m0[m bytes
+ .../classes/com/trader/app/mapper/FavMapper.class  | Bin [31m376[m -> [32m0[m bytes
+ .../com/trader/app/mapper/NotificationMapper.class | Bin [31m403[m -> [32m0[m bytes
+ .../com/trader/app/mapper/OrderMapper.class        | Bin [31m388[m -> [32m0[m bytes
+ .../com/trader/app/mapper/PriceHistoryMapper.class | Bin [31m403[m -> [32m0[m bytes
+ .../classes/com/trader/app/mapper/ProdMapper.class | Bin [31m379[m -> [32m0[m bytes
+ .../com/trader/app/mapper/ReportMapper.class       | Bin [31m385[m -> [32m0[m bytes
+ .../classes/com/trader/app/mapper/UserMapper.class | Bin [31m379[m -> [32m0[m bytes
+ .../classes/com/trader/app/util/JwtUtil.class      | Bin [31m3296[m -> [32m0[m bytes
+ .../classes/com/trader/app/util/Result.class       | Bin [31m3703[m -> [32m0[m bytes
+ .../classes/com/trader/app/util/SecretGen.class    | Bin [31m897[m -> [32m0[m bytes
+ .../compile/default-compile/createdFiles.lst       |   0
+ .../compile/default-compile/inputFiles.lst         |  35 [31m--[m
+ frontend/package.json                              |  10 [32m+[m[31m-[m
+ frontend/src/App.vue                               |  53 [32m++[m[31m-[m
+ frontend/src/components/Header.vue                 | 155 [32m+++++[m[31m--[m
+ frontend/src/main.js                               |  21 [32m+[m[31m-[m
+ frontend/src/router.js                             |  17 [32m+[m[31m-[m
+ frontend/src/views/Cart.vue                        |  98 [32m++++[m[31m-[m
+ frontend/src/views/Detail.vue                      | 342 [32m+++++++++++++++[m[31m-[m
+ frontend/src/views/List.vue                        | 276 [32m+++++++++++[m[31m--[m
+ frontend/src/views/Login.vue                       | 176 [32m++++++[m[31m--[m
+ frontend/src/views/Publish.vue                     | 172 [32m++++++[m[31m--[m
+ frontend/vite.config.js                            |  24 [32m+[m[31m-[m
+ 58 files changed, 1467 insertions(+), 864 deletions(-)

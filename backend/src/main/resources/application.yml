@@ -1,0 +1,22 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/trader?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: root
+    password: "000000"
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+
+app:
+  upload-dir: ./uploads
+
+
+jwt:
+  secret: ReplaceThisWithAStrongRandomKeyOrUseJvmProperty - # recommended to set via JVM arg -Djwt.secret=...
+  access-exp-ms: 3600000   # 1 hour
+  refresh-exp-ms: 2592000000  # 30 days
