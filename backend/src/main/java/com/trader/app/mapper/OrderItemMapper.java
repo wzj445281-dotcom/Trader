@@ -1,4 +1,7 @@
 package com.trader.app.mapper;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.trader.app.entity.OrderItem;
+import org.apache.ibatis.annotations.Mapper;
 
-public interface OrderItemMapper {
-}
+@Mapper
+public interface OrderItemMapper extends BaseMapper<OrderItem> {}
