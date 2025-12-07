@@ -14,10 +14,10 @@ public class Prod {
     private String descr;
     private Double price;
 
-    // 地理位置信息
+    private Integer stock;
+
     private Double lat;
     private Double lng;
-
     private Integer viewCount;
     private String images;
     private String category;
