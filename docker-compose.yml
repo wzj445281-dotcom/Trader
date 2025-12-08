@@ -11,9 +11,7 @@ services:
     ports:
       - "3307:3306"
     volumes:
-      # 持久化数据库数据到宿主机
       - ./mysql_data:/var/lib/mysql
-      # 初始化脚本：容器首次启动时会自动执行 sql_init.sql
       - ./backend/sql_init.sql:/docker-entrypoint-initdb.d/init.sql
     restart: always
     healthcheck:
@@ -21,35 +19,44 @@ services:
       timeout: 20s
       retries: 10
 
+  #  redis服务
+  redis:
+    image: redis:7.0
+    container_name: trader_redis
+    ports:
+      - "6379:6379"
+    restart: always
+
   # 2. 后端服务
   backend:
     build: ./backend
     container_name: trader_backend
     environment:
-      # 覆盖 application.yml 中的配置
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/trader?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: "000000"
-      # 这是一个强随机密钥，生产环境请修改
       JWT_SECRET: "MySuperSecretKeyForDockerEnvChangeMe123456"
-      # 图片上传路径
       APP_UPLOAD_DIR: "/app/uploads/"
+
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
     volumes:
-      # 将容器内的上传目录映射到宿主机的 uploads 文件夹
       - ./uploads:/app/uploads
     ports:
       - "8080:8080"
     depends_on:
       mysql:
         condition: service_healthy
+      #  依赖 Redis
+      redis:
+        condition: service_started
     restart: on-failure
 
-  # 3. 前端服务 (Nginx)
+  # 3. 前端服务
   frontend:
     build: ./frontend
     container_name: trader_frontend
     ports:
-      # 宿主机访问端口 (http://localhost)
       - "80:80"
     depends_on:
       - backend

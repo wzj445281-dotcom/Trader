@@ -8,6 +8,15 @@ spring:
     password: "000000"
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  #   Redis 配置
+  data:
+    redis:
+      # 默认连接本地，Docker 部署时会被环境变量覆盖
+      host: localhost
+      port: 6379
+      database: 0
+      timeout: 5000
+
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
@@ -15,8 +24,7 @@ mybatis-plus:
 app:
   upload-dir: ./uploads
 
-
 jwt:
-  secret: ReplaceThisWithAStrongRandomKeyOrUseJvmProperty - # recommended to set via JVM arg -Djwt.secret=...
-  access-exp-ms: 3600000   # 1 hour
-  refresh-exp-ms: 2592000000  # 30 days
+  secret: ReplaceThisWithAStrongRandomKeyOrUseJvmProperty
+  access-exp-ms: 3600000
+  refresh-exp-ms: 2592000000

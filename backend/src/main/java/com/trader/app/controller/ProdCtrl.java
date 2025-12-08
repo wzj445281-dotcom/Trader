@@ -42,9 +42,7 @@ public class ProdCtrl {
             // 增强错误捕获：如果发布失败，将抛出异常并返回错误信息
             return Result.ok(prodService.publish(p, getCurrentUserId()));
         } catch (Exception e) {
-            // 记录日志
             e.printStackTrace();
-            // 返回具体的数据库/业务错误
             return Result.fail("Product publish failed: " + e.getMessage());
         }
     }
@@ -55,7 +53,7 @@ public class ProdCtrl {
         return Result.ok(prodService.list(q, category));
     }
 
-    // 🔥 新增：获取“我发布的”商品列表接口
+    // 获取“我发布的”商品列表接口
     @GetMapping("/my")
     public Result<List<Prod>> myProds() {
         Long uid = getCurrentUserId();
@@ -68,19 +66,71 @@ public class ProdCtrl {
         return Result.ok(prodMapper.selectList(q));
     }
 
+    // 🔥🔥 补全功能 1：编辑商品
+    @PostMapping("/update")
+    public Result<Prod> update(@RequestBody Prod p) {
+        Long uid = getCurrentUserId();
+        if (uid == null) return Result.fail("未登录");
+        if (p.getId() == null) return Result.fail("商品ID缺失");
+
+        Prod exist = prodMapper.selectById(p.getId());
+        if (exist == null) return Result.fail("商品不存在");
+
+        // 权限校验：只能修改自己的商品
+        if (!exist.getUserId().equals(uid)) {
+            return Result.fail("无权修改他人的商品");
+        }
+
+        // 状态校验：如果商品已售出或有人正在下单(LOCKED)，则不允许修改
+        if ("SOLD".equals(exist.getStatus()) || "LOCKED".equals(exist.getStatus())) {
+            return Result.fail("商品处于交易中或已售出，无法修改信息");
+        }
+
+        // 更新允许修改的字段
+        if (p.getTitle() != null) exist.setTitle(p.getTitle());
+        if (p.getDescr() != null) exist.setDescr(p.getDescr());
+        if (p.getPrice() != null) exist.setPrice(p.getPrice());
+        if (p.getImages() != null) exist.setImages(p.getImages());
+        if (p.getCategory() != null) exist.setCategory(p.getCategory());
+        if (p.getStock() != null) exist.setStock(p.getStock());
+
+        prodMapper.updateById(exist);
+        return Result.ok(exist);
+    }
+
+    // 🔥🔥 补全功能 2：删除商品
+    @DeleteMapping("/{id}")
+    public Result<String> deleteProd(@PathVariable Long id) {
+        Long uid = getCurrentUserId();
+        if (uid == null) return Result.fail("未登录");
+
+        Prod exist = prodMapper.selectById(id);
+        if (exist == null) return Result.fail("商品不存在");
+
+        // 权限校验
+        if (!exist.getUserId().equals(uid)) {
+            return Result.fail("无权删除他人的商品");
+        }
+
+        // 状态校验
+        if ("SOLD".equals(exist.getStatus()) || "LOCKED".equals(exist.getStatus())) {
+            return Result.fail("商品处于交易中或已售出，无法删除");
+        }
+
+        prodMapper.deleteById(id);
+        return Result.ok("商品已删除");
+    }
+
     @GetMapping("/{id}")
-    // 🔥 核心修复：将 @PathVariable 类型改为 String，防止长数字转换失败
     public Result<Prod> detail(@PathVariable String id){
         Long prodId = null;
         try {
-            // 尝试将 String 转换为 Long
             prodId = Long.valueOf(id);
         } catch (NumberFormatException e) {
             return Result.fail("Invalid product ID format");
         }
 
         Prod p = prodMapper.selectById(prodId);
-
         if (p == null) return Result.fail("Product not found");
         return Result.ok(p);
     }
@@ -91,32 +141,39 @@ public class ProdCtrl {
         return Result.ok("Favorited");
     }
 
+    @GetMapping("/favs")
+    public Result<List<Prod>> myFavs(){
+        Long userId = getCurrentUserId();
+        if (userId == null) return Result.fail("Not logged in");
+
+        List<Fav> fs = favMapper.selectList(new QueryWrapper<Fav>().eq("user_id", userId));
+        if (fs.isEmpty()) {
+            return Result.ok(Collections.emptyList());
+        }
+
+        List<Long> ids = fs.stream().map(Fav::getProdId).collect(Collectors.toList());
+        return Result.ok(prodMapper.selectBatchIds(ids));
+    }
+
     // 地理位置搜索
     @GetMapping("/listByDistance")
     public Result<List<Prod>> listByDistance(@RequestParam double lat, @RequestParam double lng){
         return Result.ok(prodService.listByDistance(lat, lng));
     }
 
-    // 通知相关 (修复并添加安全校验)
+    // 通知相关
     @GetMapping("/notifications/{userId}")
     public Result<List<Notification>> getNotes(@PathVariable Long userId){
         Long currentUid = getCurrentUserId();
-        // 确保只有当前登录的用户才能查看自己的通知
         if (currentUid == null || !currentUid.equals(userId)) {
             return Result.fail("Unauthorized access to notifications");
         }
-
-        // 查询当前用户的通知，并按创建时间倒序
         QueryWrapper<Notification> w = new QueryWrapper<>();
         w.eq("user_id", userId).orderByDesc("created_at");
         return Result.ok(notificationMapper.selectList(w));
     }
 
-    // ===================================
-    // 评论相关 API
-    // ===================================
-
-    // 1. 获取商品评论 (此接口应为公共接口，不需要认证)
+    // 评论相关
     @GetMapping("/comments/{prodId}")
     public Result<List<Comment>> getComments(@PathVariable Long prodId){
         QueryWrapper<Comment> w = new QueryWrapper<>();
@@ -124,7 +181,6 @@ public class ProdCtrl {
         return Result.ok(commentMapper.selectList(w));
     }
 
-    // 2. 发布评论 (此接口需要认证)
     @PostMapping("/comment")
     public Result<Comment> postComment(@RequestBody Comment c){
         Long currentUserId = getCurrentUserId();
@@ -138,9 +194,7 @@ public class ProdCtrl {
         return Result.ok(c);
     }
 
-    // ===================================
     // 举报 API
-    // ===================================
     @PostMapping("/report")
     public Result<String> report(@RequestBody Report r){
         Long currentUserId = getCurrentUserId();
@@ -152,37 +206,10 @@ public class ProdCtrl {
 
         r.setReporterId(currentUserId);
         r.setCreatedAt(System.currentTimeMillis());
-        r.setStatus("OPEN"); // 初始状态为开放
+        r.setStatus("OPEN");
 
         reportMapper.insert(r);
         return Result.ok("Report submitted successfully");
-    }
-
-
-    // --- Helper ---
-    private Long getCurrentUserId() {
-        try {
-            Object prin = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (prin instanceof Long) return (Long) prin;
-            if (prin != null) return Long.valueOf(prin.toString());
-        } catch(Exception e){}
-        return null;
-    }
-
-    // 🔥 修复：获取我的收藏列表，不再需要前端传 userId，直接从 Token 获取
-    // 原来的接口是 @GetMapping("/favs/{userId}")，与 Profile.vue 的调用不匹配
-    @GetMapping("/favs")
-    public Result<List<Prod>> myFavs(){
-        Long userId = getCurrentUserId();
-        if (userId == null) return Result.fail("Not logged in");
-
-        List<Fav> fs = favMapper.selectList(new QueryWrapper<Fav>().eq("user_id", userId));
-        if (fs.isEmpty()) {
-            return Result.ok(Collections.emptyList());
-        }
-
-        List<Long> ids = fs.stream().map(Fav::getProdId).collect(Collectors.toList());
-        return Result.ok(prodMapper.selectBatchIds(ids));
     }
 
     @PostMapping("/view/{id}")
@@ -200,5 +227,14 @@ public class ProdCtrl {
         QueryWrapper<Prod> w = new QueryWrapper<>();
         w.orderByDesc("view_count").last("LIMIT " + (n==null?6:n));
         return Result.ok(prodMapper.selectList(w));
+    }
+
+    private Long getCurrentUserId() {
+        try {
+            Object prin = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (prin instanceof Long) return (Long) prin;
+            if (prin != null) return Long.valueOf(prin.toString());
+        } catch(Exception e){}
+        return null;
     }
 }
