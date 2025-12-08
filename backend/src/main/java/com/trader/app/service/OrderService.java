@@ -34,6 +34,11 @@ public class OrderService {
         order.setCreatedAt(System.currentTimeMillis());
         order.setStatus("CREATED");
         order.setAddress(address);
+
+        // 🔥 核心修复：先给 totalAmount 设置一个初始值 0
+        // 数据库该字段是 NOT NULL，如果不设置初始值，insert 时会报错 "Field 'total_amount' doesn't have a default value"
+        order.setTotalAmount(BigDecimal.ZERO);
+
         orderMapper.insert(order);
 
         for (CartItem ci : cartItems) {
@@ -105,7 +110,7 @@ public class OrderService {
                 prodMapper.updateById(p);
             }
         }
-        notify(o.getSellerId(), "订单已支付", "订单号：" + orderId);
+        sendNotification(o.getSellerId(), "订单已支付", "订单号：" + orderId);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -114,7 +119,7 @@ public class OrderService {
         if (o == null || !o.getSellerId().equals(userId)) throw new IllegalArgumentException("无权操作");
         o.setStatus("SHIPPED");
         orderMapper.updateById(o);
-        notify(o.getBuyerId(), "订单已发货", "订单号：" + orderId);
+        sendNotification(o.getBuyerId(), "订单已发货", "订单号：" + orderId);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -123,7 +128,7 @@ public class OrderService {
         if (o == null || !o.getBuyerId().equals(userId)) throw new IllegalArgumentException("无权操作");
         o.setStatus("COMPLETED");
         orderMapper.updateById(o);
-        notify(o.getSellerId(), "交易完成", "订单号：" + orderId);
+        sendNotification(o.getSellerId(), "交易完成", "订单号：" + orderId);
     }
 
     // 取消订单
@@ -158,10 +163,11 @@ public class OrderService {
             }
         }
 
-        notify(o.getSellerId().equals(userId) ? o.getBuyerId() : o.getSellerId(), "订单已取消", "订单号：" + orderId);
+        sendNotification(o.getSellerId().equals(userId) ? o.getBuyerId() : o.getSellerId(), "订单已取消", "订单号：" + orderId);
     }
 
-    private void notify(Long uid, String title, String body) {
+    // ⚡️ 将 notify 改名为 sendNotification，避免与 Object.notify() 冲突
+    private void sendNotification(Long uid, String title, String body) {
         if(uid == null) return;
         Notification n = new Notification();
         n.setUserId(uid);

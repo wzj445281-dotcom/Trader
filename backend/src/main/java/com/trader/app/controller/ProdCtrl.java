@@ -55,6 +55,19 @@ public class ProdCtrl {
         return Result.ok(prodService.list(q, category));
     }
 
+    // 🔥 新增：获取“我发布的”商品列表接口
+    @GetMapping("/my")
+    public Result<List<Prod>> myProds() {
+        Long uid = getCurrentUserId();
+        if (uid == null) return Result.fail("Not logged in");
+
+        QueryWrapper<Prod> q = new QueryWrapper<>();
+        q.eq("user_id", uid);
+        q.orderByDesc("created_at");
+
+        return Result.ok(prodMapper.selectList(q));
+    }
+
     @GetMapping("/{id}")
     // 🔥 核心修复：将 @PathVariable 类型改为 String，防止长数字转换失败
     public Result<Prod> detail(@PathVariable String id){
@@ -156,12 +169,19 @@ public class ProdCtrl {
         return null;
     }
 
-    // --- 遗留的其他简单接口暂时保留原样，实际项目中也应移入 Service ---
-    @GetMapping("/favs/{userId}")
-    public Result<List<Prod>> favs(@PathVariable Long userId){
+    // 🔥 修复：获取我的收藏列表，不再需要前端传 userId，直接从 Token 获取
+    // 原来的接口是 @GetMapping("/favs/{userId}")，与 Profile.vue 的调用不匹配
+    @GetMapping("/favs")
+    public Result<List<Prod>> myFavs(){
+        Long userId = getCurrentUserId();
+        if (userId == null) return Result.fail("Not logged in");
+
         List<Fav> fs = favMapper.selectList(new QueryWrapper<Fav>().eq("user_id", userId));
+        if (fs.isEmpty()) {
+            return Result.ok(Collections.emptyList());
+        }
+
         List<Long> ids = fs.stream().map(Fav::getProdId).collect(Collectors.toList());
-        if (ids.isEmpty()) return Result.ok(Collections.emptyList());
         return Result.ok(prodMapper.selectBatchIds(ids));
     }
 
