@@ -38,23 +38,24 @@ import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
-import { useCartStore } from '../stores/cart' // 引入购物车 Store
+import { useCartStore } from '../stores/cart'
+import api from '../api' // 🔥 引入 api
 
 const userStore = useUserStore()
-const cartStore = useCartStore() // 使用
+const cartStore = useCartStore()
 const router = useRouter()
+const selectedItems = ref([])
 
 const selectedCount = computed(() => cartStore.cartList.filter(i => i.selected).length)
 
 onMounted(() => {
-  cartStore.fetchCart() // 调用 action 拉取数据
+  cartStore.fetchCart()
 })
 
-// 处理多选：更新 store 中 item 的 selected 状态
 const handleSelectionChange = (val) => {
-  // 先重置
+  selectedItems.value = val
+  // 同步状态到 Store
   cartStore.cartList.forEach(item => item.selected = false)
-  // 标记选中
   val.forEach(v => {
     const item = cartStore.cartList.find(i => i.id === v.id)
     if(item) item.selected = true
@@ -62,13 +63,15 @@ const handleSelectionChange = (val) => {
 }
 
 const removeItem = async (id) => {
-  await window.api.delete('/prod/cart/' + id);
-  ElMessage.success('已删除')
-  cartStore.fetchCart() // 重新拉取
+  try {
+    await api.delete('/prod/cart/' + id);
+    ElMessage.success('已删除')
+    cartStore.fetchCart()
+  } catch(e) { ElMessage.error('删除失败') }
 }
 
 const checkout = async () => {
-  if(selectedCount.value === 0) return ElMessage.warning('请选择要结算的商品');
+  if(selectedCount.value === 0) return ElMessage.warning('请选择商品');
 
   const { value: address } = await ElMessageBox.prompt('请输入收货地址', '确认订单', {
     confirmButtonText: '提交订单',
@@ -79,28 +82,21 @@ const checkout = async () => {
   })
 
   if (address) {
-    // 筛选出选中的 ID
-    const cartItemIds = cartStore.cartList.filter(i => i.selected).map(i => i.id)
-
+    const cartItemIds = selectedItems.value.map(item => item.id)
     try {
-      const r = await window.api.post('/order/create', { address, cartItemIds })
+      const r = await api.post('/order/create', { address, cartItemIds })
       if (r.data.code === 0) {
-        ElMessage.success('订单创建成功！')
+        ElMessage.success('下单成功')
         cartStore.fetchCart()
         router.push('/profile?tab=orders')
       } else {
         ElMessage.error(r.data.msg)
       }
-    } catch(e) {
-      ElMessage.error('创建订单失败')
-    }
+    } catch(e) { ElMessage.error('下单失败: ' + (e.response?.data?.msg || e.message)) }
   }
 }
 
-const fmt = (s) => {
-  if (!s) return 'https://via.placeholder.com/50'
-  return s.startsWith('/uploads/') ? 'http://localhost:8080' + s : s
-}
+const fmt = (s) => s && s.startsWith('/uploads/') ? 'http://localhost:8080' + s : s
 </script>
 
 <style scoped>

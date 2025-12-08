@@ -1,4 +1,4 @@
-package java.com.trader.app.controller;
+package com.trader.app.controller;
 
 import com.trader.app.entity.Fav;
 import com.trader.app.entity.Prod;

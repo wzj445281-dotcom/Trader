@@ -8,21 +8,9 @@
 
     <div class="product-main">
       <div class="gallery">
-        <el-image
-            v-if="currentImg"
-            :src="fmt(currentImg)"
-            fit="contain"
-            class="main-img"
-            :preview-src-list="imgList.map(fmt)"
-        />
+        <el-image v-if="currentImg" :src="fmt(currentImg)" fit="contain" class="main-img" :preview-src-list="imgList.map(fmt)" />
         <div class="thumb-list" v-if="imgList.length > 1">
-          <div
-              v-for="(img, idx) in imgList"
-              :key="idx"
-              class="thumb-item"
-              :class="{ active: currentImg === img }"
-              @click="currentImg = img"
-          >
+          <div v-for="(img, idx) in imgList" :key="idx" class="thumb-item" :class="{ active: currentImg === img }" @click="currentImg = img">
             <el-image :src="fmt(img)" fit="cover" class="thumb-img" />
           </div>
         </div>
@@ -37,48 +25,33 @@
         </div>
 
         <div class="meta-info">
-          <div class="meta-item">
-            <span class="label">分类：</span>
-            <span>{{ p.category }}</span>
-          </div>
-          <div class="meta-item">
-            <span class="label">状态：</span>
-            <el-tag type="success">{{ p.status }}</el-tag>
-          </div>
-          <div class="meta-item">
-            <span class="label">发布时间：</span>
-            <span>{{ formatTime(p.createdAt) }}</span>
-          </div>
+          <div class="meta-item"><span class="label">分类：</span><span>{{ p.category }}</span></div>
+          <div class="meta-item"><span class="label">状态：</span><el-tag type="success">{{ p.status }}</el-tag></div>
+          <div class="meta-item"><span class="label">库存：</span><span>{{ p.stock }} 件</span></div>
+          <div class="meta-item"><span class="label">发布时间：</span><span>{{ formatTime(p.createdAt) }}</span></div>
         </div>
 
         <div class="actions">
-          <el-button type="danger" size="large" icon="ShoppingCart" @click="handleBuy">立即购买</el-button>
+          <el-button type="danger" size="large" icon="ShoppingCart" @click="handleBuy" :loading="buying" :disabled="!p.stock || p.stock <= 0">
+            {{ (!p.stock || p.stock <= 0) ? '暂时缺货' : '立即购买' }}
+          </el-button>
           <el-button type="primary" size="large" plain icon="Star" @click="favIt">收藏</el-button>
           <el-button size="large" icon="ChatDotRound" @click="contactSeller">联系卖家</el-button>
         </div>
-
         <el-divider content-position="left">商品描述</el-divider>
-        <div class="description">
-          {{ p.descr }}
-        </div>
+        <div class="description">{{ p.descr }}</div>
       </div>
     </div>
 
     <div class="comments-section">
       <h3>留言区</h3>
       <div class="comment-input">
-        <el-input
-            v-model="newComment"
-            type="textarea"
-            :rows="3"
-            placeholder="对这件商品感兴趣？留言问问吧..."
-        />
+        <el-input v-model="newComment" type="textarea" :rows="3" placeholder="对这件商品感兴趣？留言问问吧..." />
         <div class="comment-tools">
           <el-rate v-model="newRating" />
           <el-button type="primary" @click="postComment">发布留言</el-button>
         </div>
       </div>
-
       <div class="comment-list">
         <div v-for="c in comments" :key="c.id" class="comment-item">
           <div class="comment-header">
@@ -99,7 +72,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { View, ShoppingCart, Star, ChatDotRound } from '@element-plus/icons-vue'
-import { detail, fav } from '../api'
+import api, { detail, fav } from '../api' // 🔥 显式引入 api
 
 const route = useRoute()
 const router = useRouter()
@@ -108,59 +81,26 @@ const comments = ref([])
 const newComment = ref('')
 const newRating = ref(5)
 const currentImg = ref('')
+const buying = ref(false)
 
-// 计算属性
 const imgList = computed(() => p.value?.images ? p.value.images.split(',') : [])
 
 onMounted(async () => {
   await loadData()
-  // 记录浏览
-  if (p.value) window.api.post('/prod/view/' + p.value.id)
+  if (p.value) api.post('/prod/view/' + p.value.id)
 })
 
 const loadData = async () => {
-  const r = await detail(route.params.id)
-  if (r.data.code === 0) {
-    p.value = r.data.data
-    if (imgList.value.length > 0) currentImg.value = imgList.value[0]
-  }
-  const rc = await window.api.get('/prod/comments/' + route.params.id)
-  if (rc.data.code === 0) comments.value = rc.data.data
-}
-
-const fmt = (s) => {
-  if (!s) return ''
-  return s.startsWith('/uploads/') ? 'http://localhost:8080' + s : s
-}
-
-const formatTime = (time) => {
-  if (!time) return ''
-  // 简单处理时间格式
-  if (Array.isArray(time)) return `${time[0]}-${time[1]}-${time[2]}`
-  return new Date(time).toLocaleDateString()
-}
-
-const favIt = async () => {
-  const user = JSON.parse(localStorage.getItem('trader_user'))
-  if (!user) { ElMessage.warning('请先登录'); return router.push('/login') }
-  const r = await fav({ prodId: p.value.id })
-  if (r.data.code === 0) ElMessage.success('已加入收藏')
-  else ElMessage.error(r.data.msg)
-}
-
-const postComment = async () => {
-  const user = JSON.parse(localStorage.getItem('trader_user'))
-  if (!user) { ElMessage.warning('请先登录'); return router.push('/login') }
-  if (!newComment.value.trim()) return ElMessage.warning('请输入内容')
-
-  const payload = { userId: user.id, prodId: p.value.id, content: newComment.value, rating: newRating.value }
-  const r = await window.api.post('/prod/comment', payload)
-  if (r.data.code === 0) {
-    ElMessage.success('留言成功')
-    newComment.value = ''
-    // 重新加载评论
-    const rc = await window.api.get('/prod/comments/' + p.value.id)
+  try {
+    const r = await detail(route.params.id)
+    if (r.data.code === 0) {
+      p.value = r.data.data
+      if (imgList.value.length > 0) currentImg.value = imgList.value[0]
+    }
+    const rc = await api.get('/prod/comments/' + route.params.id)
     if (rc.data.code === 0) comments.value = rc.data.data
+  } catch (e) {
+    ElMessage.error('数据加载失败，请检查后端服务')
   }
 }
 
@@ -168,160 +108,76 @@ const handleBuy = async () => {
   const user = JSON.parse(localStorage.getItem('trader_user'))
   if (!user) { ElMessage.warning('请先登录'); return router.push('/login') }
 
-  // 简单添加到购物车逻辑
-  const r = await window.api.post('/prod/cart/add', { userId: user.id, prodId: p.value.id, qty: 1 })
-  if (r.data.code === 0) {
-    ElMessage.success('已加入购物车')
-    router.push('/cart')
-  } else {
-    ElMessage.error(r.data.msg)
+  buying.value = true
+  try {
+    // 🔥 使用显式 api 对象，增加错误捕获
+    const r = await api.post('/prod/cart/add', { userId: user.id, prodId: p.value.id, qty: 1 })
+    if (r.data.code === 0) {
+      ElMessage.success('已加入购物车')
+      router.push('/cart')
+    } else {
+      ElMessage.error(r.data.msg || '添加失败')
+    }
+  } catch (e) {
+    console.error(e)
+    ElMessage.error('请求失败: ' + (e.response?.data?.msg || e.message))
+  } finally {
+    buying.value = false
   }
 }
 
-const contactSeller = () => {
+// ... 其他方法保持不变 (fmt, formatTime, favIt, postComment, contactSeller) ...
+const fmt = (s) => s && s.startsWith('/uploads/') ? 'http://localhost:8080' + s : s
+const formatTime = (time) => time ? (Array.isArray(time) ? `${time[0]}-${time[1]}-${time[2]}` : new Date(time).toLocaleDateString()) : ''
+const favIt = async () => {
   const user = JSON.parse(localStorage.getItem('trader_user'))
-  if (!user) return router.push('/login')
-  // 跳转到聊天页面
-  router.push('/chat')
-  ElMessage.info('聊天功能开发中，请先进入聊天室列表')
+  if (!user) { ElMessage.warning('请先登录'); return router.push('/login') }
+  const r = await fav({ prodId: p.value.id })
+  if (r.data.code === 0) ElMessage.success('已加入收藏')
+}
+const postComment = async () => {
+  const user = JSON.parse(localStorage.getItem('trader_user'))
+  if (!user) { ElMessage.warning('请先登录'); return router.push('/login') }
+  if (!newComment.value.trim()) return ElMessage.warning('请输入内容')
+  const payload = { userId: user.id, prodId: p.value.id, content: newComment.value, rating: newRating.value }
+  const r = await api.post('/prod/comment', payload)
+  if (r.data.code === 0) {
+    ElMessage.success('留言成功'); newComment.value = '';
+    const rc = await api.get('/prod/comments/' + p.value.id); if (rc.data.code === 0) comments.value = rc.data.data
+  }
+}
+const contactSeller = () => {
+  const user = JSON.parse(localStorage.getItem('trader_user')); if (!user) return router.push('/login');
+  router.push('/chat'); ElMessage.info('聊天功能开发中，请先进入聊天室列表')
 }
 </script>
 
 <style scoped>
-.detail-container {
-  padding: 20px;
-  background: #fff;
-  border-radius: 8px;
-}
-.breadcrumb {
-  margin-bottom: 20px;
-}
-.product-main {
-  display: flex;
-  gap: 40px;
-  margin-bottom: 40px;
-}
-.gallery {
-  width: 400px;
-  flex-shrink: 0;
-}
-.main-img {
-  width: 100%;
-  height: 400px;
-  border: 1px solid #eee;
-  border-radius: 4px;
-  margin-bottom: 10px;
-  background: #f9f9f9;
-}
-.thumb-list {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-}
-.thumb-item {
-  width: 60px;
-  height: 60px;
-  border: 2px solid transparent;
-  cursor: pointer;
-  border-radius: 4px;
-}
-.thumb-item.active {
-  border-color: #409EFF;
-}
-.thumb-img {
-  width: 100%;
-  height: 100%;
-  border-radius: 2px;
-}
-.info-col {
-  flex: 1;
-}
-.title {
-  font-size: 24px;
-  color: #303133;
-  margin-top: 0;
-}
-.price-box {
-  background: #fff5f5;
-  padding: 15px;
-  border-radius: 4px;
-  color: #f56c6c;
-  margin: 20px 0;
-  display: flex;
-  align-items: baseline;
-  position: relative;
-}
+.detail-container { padding: 20px; background: #fff; border-radius: 8px; }
+.product-main { display: flex; gap: 40px; margin-bottom: 40px; }
+.gallery { width: 400px; flex-shrink: 0; }
+.main-img { width: 100%; height: 400px; border: 1px solid #eee; border-radius: 4px; margin-bottom: 10px; background: #f9f9f9; }
+.thumb-list { display: flex; gap: 10px; overflow-x: auto; }
+.thumb-item { width: 60px; height: 60px; border: 2px solid transparent; cursor: pointer; border-radius: 4px; }
+.thumb-item.active { border-color: #409EFF; }
+.thumb-img { width: 100%; height: 100%; border-radius: 2px; }
+.info-col { flex: 1; }
+.title { font-size: 24px; color: #303133; margin-top: 0; }
+.price-box { background: #fff5f5; padding: 15px; border-radius: 4px; color: #f56c6c; margin: 20px 0; display: flex; align-items: baseline; position: relative; }
 .currency { font-size: 18px; }
 .amount { font-size: 32px; font-weight: bold; }
-.view-info {
-  position: absolute;
-  right: 15px;
-  color: #909399;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-.meta-info {
-  margin-bottom: 30px;
-}
-.meta-item {
-  margin-bottom: 12px;
-  color: #606266;
-}
-.meta-item .label {
-  color: #909399;
-  width: 80px;
-  display: inline-block;
-}
-.actions {
-  display: flex;
-  gap: 15px;
-  margin-bottom: 30px;
-}
-.description {
-  margin-top: 20px;
-  color: #606266;
-  line-height: 1.6;
-  white-space: pre-wrap;
-}
-.comments-section {
-  margin-top: 40px;
-  border-top: 1px solid #ebeef5;
-  padding-top: 20px;
-}
-.comment-input {
-  margin-bottom: 30px;
-  background: #f9f9f9;
-  padding: 20px;
-  border-radius: 8px;
-}
-.comment-tools {
-  margin-top: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.comment-item {
-  border-bottom: 1px solid #f0f0f0;
-  padding: 15px 0;
-}
-.comment-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-.comment-user {
-  font-weight: bold;
-  color: #303133;
-}
-.comment-time {
-  color: #909399;
-  font-size: 12px;
-  margin-left: auto;
-}
-.comment-content {
-  color: #606266;
-}
+.view-info { position: absolute; right: 15px; color: #909399; font-size: 14px; display: flex; align-items: center; gap: 5px; }
+.meta-info { margin-bottom: 30px; }
+.meta-item { margin-bottom: 12px; color: #606266; }
+.meta-item .label { color: #909399; width: 80px; display: inline-block; }
+.actions { display: flex; gap: 15px; margin-bottom: 30px; }
+.description { margin-top: 20px; color: #606266; line-height: 1.6; white-space: pre-wrap; }
+.comments-section { margin-top: 40px; border-top: 1px solid #ebeef5; padding-top: 20px; }
+.comment-input { margin-bottom: 30px; background: #f9f9f9; padding: 20px; border-radius: 8px; }
+.comment-tools { margin-top: 10px; display: flex; justify-content: space-between; align-items: center; }
+.comment-item { border-bottom: 1px solid #f0f0f0; padding: 15px 0; }
+.comment-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.comment-user { font-weight: bold; color: #303133; }
+.comment-time { color: #909399; font-size: 12px; margin-left: auto; }
+.comment-content { color: #606266; }
 </style>
