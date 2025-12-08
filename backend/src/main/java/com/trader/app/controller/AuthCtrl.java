@@ -91,5 +91,14 @@ public class AuthCtrl {
         return Result.ok(resp);
     }
 
-    // ... refresh 和 logout 方法保持不变
+    // 🔥 核心修复：新增登出接口，删除数据库中的 RefreshToken
+    @PostMapping("/logout")
+    public Result<String> logout(@RequestBody Map<String, String> body) {
+        String refreshToken = body.get("refresh");
+        if (refreshToken != null) {
+            // 删除匹配的 RefreshToken，使其在下次尝试刷新时失效
+            refreshTokenMapper.delete(new QueryWrapper<RefreshToken>().eq("token", refreshToken));
+        }
+        return Result.ok("Logged out successfully");
+    }
 }

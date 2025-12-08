@@ -39,10 +39,19 @@ public class OrderService {
         for (CartItem ci : cartItems) {
             Prod p = prodMapper.selectById(ci.getProdId());
             if (p == null || !"AVAILABLE".equals(p.getStatus())) {
-                throw new IllegalArgumentException("商品 [" + (p!=null?p.getTitle():ci.getProdId()) + "] 无法购买");
+                // 记录日志，便于调试
+                System.err.println("结算失败：商品 [" + (p != null ? p.getTitle() : ci.getProdId()) + "] 状态不可用或不存在");
+                throw new IllegalArgumentException("商品 [" + (p != null ? p.getTitle() : ci.getProdId()) + "] 无法购买");
             }
-            if (p.getUserId().equals(userId)) throw new IllegalArgumentException("不能购买自己的商品");
 
+            // 核心校验：用户不能购买自己的商品
+            if (p.getUserId().equals(userId)) {
+                // 记录日志，便于调试
+                System.err.println("结算失败：用户 " + userId + " 试图购买自己的商品 " + p.getId());
+                throw new IllegalArgumentException("不能购买自己的商品: [" + p.getTitle() + "]");
+            }
+
+            // 如果是多件商品，需要确保它们来自同一个卖家。此处逻辑是第一次循环时确定 sellerId
             if (sellerId == null) sellerId = p.getUserId();
 
             OrderItem item = new OrderItem();
@@ -59,19 +68,23 @@ public class OrderService {
             // 扣减库存
             int currentStock = p.getStock() == null ? 0 : p.getStock();
             if (currentStock < ci.getQty()) {
+                // 记录日志，便于调试
+                System.err.println("结算失败：商品 [" + p.getTitle() + "] 库存不足");
                 throw new IllegalArgumentException("商品 [" + p.getTitle() + "] 库存不足");
             }
             p.setStock(currentStock - ci.getQty());
             if (p.getStock() <= 0) p.setStatus("LOCKED");
             prodMapper.updateById(p);
-        }
+        } // for 循环结束
 
+        // 最终更新订单总价和卖家 ID
         order.setTotalAmount(totalAmount);
         order.setSellerId(sellerId);
         orderMapper.updateById(order);
 
+        // 清空购物车项
         cartItemMapper.deleteBatchIds(cartItemIds);
-        return order;
+        return order; // 正常返回订单实体
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -113,7 +126,7 @@ public class OrderService {
         notify(o.getSellerId(), "交易完成", "订单号：" + orderId);
     }
 
-    // 🔥 新增：取消订单
+    // 取消订单
     @Transactional(rollbackFor = Exception.class)
     public void cancelOrder(Long userId, Long orderId) {
         OrderEntity o = orderMapper.selectById(orderId);

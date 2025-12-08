@@ -44,19 +44,28 @@
 import { useRouter } from 'vue-router'
 import { Goods, Plus, ShoppingCart, ChatDotRound, ArrowDown } from '@element-plus/icons-vue'
 import { logoutApi } from '../api'
-import { useUserStore } from '../stores/user' // 引入 Pinia store
+import { useUserStore } from '../stores/user'
 
 const router = useRouter()
-const userStore = useUserStore() // 使用 store
+const userStore = useUserStore()
 
 const handleCommand = async (command) => {
   if (command === 'logout') {
-    try {
-      const ref = localStorage.getItem('trader_refresh')
-      if(ref) await logoutApi(ref)
-    } catch(e){}
+    // 1. 尝试调用后端接口使 Refresh Token 失效
+    const ref = localStorage.getItem('trader_refresh')
+    if(ref) {
+      try {
+        await logoutApi(ref)
+      } catch(e){
+        console.error('Logout API failed but proceeding with local logout:', e)
+        // 即使后端调用失败，也必须清除本地状态，确保登出流程完整
+      }
+    }
 
-    userStore.logout() // 使用 store 的 action 清除状态
+    // 2. 清除本地状态和缓存
+    userStore.logout()
+
+    // 3. 跳转到登录页
     router.push('/login')
   } else if (command === 'admin') {
     router.push('/admin')

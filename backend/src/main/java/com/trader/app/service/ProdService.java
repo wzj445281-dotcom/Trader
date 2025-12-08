@@ -25,28 +25,54 @@ public class ProdService {
     @Autowired ProdMapper prodMapper;
     @Autowired FavMapper favMapper;
 
-    @Value("${app.upload-dir}")
-    private String uploadDir;
+    // 尽管有配置，但我们通过 System.getProperty("user.dir") 强制获取项目的绝对路径
+    // 这样能解决 Windows 下的相对路径解析问题
+    private final String ABSOLUTE_UPLOAD_DIR = System.getProperty("user.dir") + File.separator + "uploads";
+
 
     public String uploadImage(MultipartFile file) throws IOException {
-        File dir = new File(uploadDir);
-        if (!dir.exists()) dir.mkdirs();
+        File dir = new File(ABSOLUTE_UPLOAD_DIR);
+
+        // 检查并创建目录
+        if (!dir.exists()) {
+            boolean created = dir.mkdirs();
+            if (!created) {
+                throw new IOException("Failed to create upload directory: " + ABSOLUTE_UPLOAD_DIR);
+            }
+        }
+
+        // 检查目录是否可写
+        if (!dir.canWrite()) {
+            throw new IOException("Upload directory is not writable: " + ABSOLUTE_UPLOAD_DIR);
+        }
 
         String orig = file.getOriginalFilename();
         String name = UUID.randomUUID().toString() + (orig == null ? "" : ("_" + orig));
         File dest = new File(dir, name);
 
-        file.transferTo(dest);
+        // 打印绝对路径，用于确认是否正确
+        System.out.println("Uploading file to absolute path: " + dest.getAbsolutePath());
+
+        try {
+            // 🔥 核心修复点：将文件转移到我们明确指定的绝对路径
+            file.transferTo(dest);
+        } catch (IllegalStateException e) {
+            // 捕获可能的文件已移动的异常
+            throw new IOException("File already moved or temporary file access error.", e);
+        } catch (IOException e) {
+            // 捕获找不到路径的异常
+            throw new IOException("Failed to save file to " + dest.getAbsolutePath(), e);
+        }
 
         // Try creating thumbnail
         try {
             File thumb = new File(dir, "thumb_" + name);
             Thumbnails.of(dest).size(800, 800).toFile(thumb);
         } catch (Exception e) {
-            // Log but don't fail transaction
             System.err.println("Thumbnail generation failed: " + e.getMessage());
         }
 
+        // 数据库存储的仍然是相对访问路径
         return "/uploads/" + name;
     }
 
@@ -54,6 +80,7 @@ public class ProdService {
         if (uid == null) throw new IllegalArgumentException("User not authenticated");
         p.setUserId(uid);
         p.setCreatedAt(LocalDateTime.now());
+        if (p.getStock() == null) p.setStock(1);
         p.setStatus("AVAILABLE");
         prodMapper.insert(p);
         return p;

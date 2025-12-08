@@ -117,7 +117,8 @@ onMounted(async () => {
   if (rr.data.code === 0) recs.value = rr.data.data
 })
 
-const go = (id) => router.push('/p/' + id)
+// 🔥 核心修复点：确保 ID 在路由跳转时明确转换为字符串
+const go = (id) => router.push('/p/' + String(id))
 
 const fmt = (s) => {
   if (!s) return ''

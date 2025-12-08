@@ -112,22 +112,31 @@ const imgList = computed(() => p.value?.images ? p.value.images.split(',') : [])
 
 onMounted(async () => {
   await loadData()
-  if (p.value) { try { window.api.post('/prod/view/' + p.value.id) } catch(e){} }
+  // 确保路由参数是字符串，避免精度问题
+  if (p.value) { try { window.api.post('/prod/view/' + String(p.value.id)) } catch(e){} }
 })
 
 const loadData = async () => {
   try {
-    const r = await detail(route.params.id)
+    // 核心修复点 2：在调用 API 时，确保 ID 明确转换为字符串
+    const r = await detail(String(route.params.id))
     if (r.data.code === 0) {
       p.value = r.data.data
       if (imgList.value.length > 0) currentImg.value = imgList.value[0]
     } else { ElMessage.error('商品不存在或已下架') }
-    const rc = await window.api.get('/prod/comments/' + route.params.id)
+
+    // 评论加载也需要确保 ID 是字符串
+    const rc = await window.api.get('/prod/comments/' + String(route.params.id))
     if (rc.data.code === 0) comments.value = rc.data.data
   } catch(e) { ElMessage.error('加载失败') }
 }
 
-const fmt = (s) => s // 图片路径处理
+// 🔥 修复点：添加完整的图片 URL 拼接逻辑
+const fmt = (s) => {
+  if (!s) return ''
+  // 拼接后端地址，确保本地上传的图片能正常显示
+  return s.startsWith('/uploads/') ? 'http://localhost:8080' + s : s
+}
 
 const formatTime = (time) => {
   if (!time) return ''
@@ -182,7 +191,7 @@ const contactSeller = () => {
   ElMessage.info(`卖家ID是 ${p.value.userId}，请在聊天室输入该ID`)
 }
 
-// 🔥 新增：提交举报逻辑
+// 提交举报逻辑
 const submitReport = async () => {
   if(!reportReason.value.trim()) return ElMessage.warning('请输入理由');
   try {

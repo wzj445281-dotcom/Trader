@@ -1,13 +1,13 @@
 package com.trader.app.controller;
 
-import com.trader.app.entity.Fav;
-import com.trader.app.entity.Prod;
+import com.trader.app.entity.*;
 import com.trader.app.service.ProdService;
 import com.trader.app.util.Result;
 import com.trader.app.mapper.ProdMapper;
 import com.trader.app.mapper.FavMapper;
-import com.trader.app.mapper.NotificationMapper; // <-- 新增导入
-import com.trader.app.entity.Notification; // <-- 新增导入
+import com.trader.app.mapper.NotificationMapper;
+import com.trader.app.mapper.CommentMapper;
+import com.trader.app.mapper.ReportMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -25,10 +25,11 @@ public class ProdCtrl {
 
     @Autowired private ProdService prodService;
 
-    // 依然保留 Mapper 用于一些简单查询，或者也应该移入 Service
     @Autowired private ProdMapper prodMapper;
     @Autowired private FavMapper favMapper;
-    @Autowired private NotificationMapper notificationMapper; // <-- 正确注入 NotificationMapper
+    @Autowired private NotificationMapper notificationMapper;
+    @Autowired private CommentMapper commentMapper;
+    @Autowired private ReportMapper reportMapper;
 
     @PostMapping("/uploadImg")
     public Result<String> uploadImg(@RequestParam("file") MultipartFile file) throws IOException {
@@ -37,7 +38,15 @@ public class ProdCtrl {
 
     @PostMapping("/publish")
     public Result<Prod> publish(@RequestBody Prod p){
-        return Result.ok(prodService.publish(p, getCurrentUserId()));
+        try {
+            // 增强错误捕获：如果发布失败，将抛出异常并返回错误信息
+            return Result.ok(prodService.publish(p, getCurrentUserId()));
+        } catch (Exception e) {
+            // 记录日志
+            e.printStackTrace();
+            // 返回具体的数据库/业务错误
+            return Result.fail("Product publish failed: " + e.getMessage());
+        }
     }
 
     @GetMapping("/list")
@@ -47,8 +56,18 @@ public class ProdCtrl {
     }
 
     @GetMapping("/{id}")
-    public Result<Prod> detail(@PathVariable Long id){
-        Prod p = prodMapper.selectById(id);
+    // 🔥 核心修复：将 @PathVariable 类型改为 String，防止长数字转换失败
+    public Result<Prod> detail(@PathVariable String id){
+        Long prodId = null;
+        try {
+            // 尝试将 String 转换为 Long
+            prodId = Long.valueOf(id);
+        } catch (NumberFormatException e) {
+            return Result.fail("Invalid product ID format");
+        }
+
+        Prod p = prodMapper.selectById(prodId);
+
         if (p == null) return Result.fail("Product not found");
         return Result.ok(p);
     }
@@ -80,6 +99,52 @@ public class ProdCtrl {
         return Result.ok(notificationMapper.selectList(w));
     }
 
+    // ===================================
+    // 评论相关 API
+    // ===================================
+
+    // 1. 获取商品评论 (此接口应为公共接口，不需要认证)
+    @GetMapping("/comments/{prodId}")
+    public Result<List<Comment>> getComments(@PathVariable Long prodId){
+        QueryWrapper<Comment> w = new QueryWrapper<>();
+        w.eq("prod_id", prodId).orderByDesc("created_at");
+        return Result.ok(commentMapper.selectList(w));
+    }
+
+    // 2. 发布评论 (此接口需要认证)
+    @PostMapping("/comment")
+    public Result<Comment> postComment(@RequestBody Comment c){
+        Long currentUserId = getCurrentUserId();
+        if (currentUserId == null) return Result.fail("User not logged in");
+
+        c.setUserId(currentUserId);
+        c.setCreatedAt(System.currentTimeMillis());
+        if (c.getRating() == null) c.setRating(5);
+
+        commentMapper.insert(c);
+        return Result.ok(c);
+    }
+
+    // ===================================
+    // 举报 API
+    // ===================================
+    @PostMapping("/report")
+    public Result<String> report(@RequestBody Report r){
+        Long currentUserId = getCurrentUserId();
+        if (currentUserId == null) return Result.fail("User not logged in");
+
+        if (r.getProdId() == null || r.getReason() == null || r.getReason().isBlank()) {
+            return Result.fail("Missing product ID or reason");
+        }
+
+        r.setReporterId(currentUserId);
+        r.setCreatedAt(System.currentTimeMillis());
+        r.setStatus("OPEN"); // 初始状态为开放
+
+        reportMapper.insert(r);
+        return Result.ok("Report submitted successfully");
+    }
+
 
     // --- Helper ---
     private Long getCurrentUserId() {
@@ -92,7 +157,6 @@ public class ProdCtrl {
     }
 
     // --- 遗留的其他简单接口暂时保留原样，实际项目中也应移入 Service ---
-    // 例如 favs, view, recommendTop 等保持原样或逐步迁移
     @GetMapping("/favs/{userId}")
     public Result<List<Prod>> favs(@PathVariable Long userId){
         List<Fav> fs = favMapper.selectList(new QueryWrapper<Fav>().eq("user_id", userId));

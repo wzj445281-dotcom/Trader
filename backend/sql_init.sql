@@ -170,12 +170,12 @@ CREATE TABLE `chat_message` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='聊天记录表';
 
 -- ==================== 数据注入 (使用 test2.sql 完整数据) ====================
--- 密码统一为: password123 (哈希值：$2a$10$7QeYh1bV1J8KZq8Zr1aWJeYkqg3h2VZr3fY8Qz0b3Bz1b2c3d4eFG)
+-- 密码统一为: qq123123 (哈希值：$2a$10$7QeYh1bV1J8KZq8Zr1aWJeYkqg3h2VZr3fY8Qz0b3Bz1b2c3d4eFG)
 
 INSERT INTO `user` (id, username, password, email, phone, role, avatar) VALUES
-(1001, 'alice', '$2a$10$n7lcB1X5sjwmKWOrIiVn2uOYd5udCtVph/XHSWYn5SQPXhuEirl06', 'alice@edu.com', '13800138001', 'USER', 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'),
-(1002, 'bob',   '$2a$10$n7lcB1X5sjwmKWOrIiVn2uOYd5udCtVph/XHSWYn5SQPXhuEirl06', 'bob@edu.com',   '13800138002', 'USER', 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'),
-(1003, 'admin', '$2a$10$n7lcB1X5sjwmKWOrIiVn2uOYd5udCtVph/XHSWYn5SQPXhuEirl06', 'admin@edu.com', '13800138000', 'ADMIN', 'https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9dpng.png');
+(1001, 'alice', 'qq123123', 'alice@edu.com', '13800138001', 'USER', 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'),
+(1002, 'bob',   'qq123123', 'bob@edu.com',   '13800138002', 'USER', 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'),
+(1003, 'admin', 'qq123123', 'admin@edu.com', '13800138000', 'ADMIN', 'https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9dpng.png');
 
 INSERT INTO `prod` (id, user_id, title, descr, price, stock, images, category, status, view_count, created_at) VALUES
 (2001, 1002, 'iPhone 13 Pro Max 256G 远峰蓝', '换 15 了所以出。国行原装，电池健康 88%，一直带壳贴膜，无划痕。附送三个手机壳和原装充电线。', 4500.00, 1, 'https://images.unsplash.com/photo-1632661674596-df8be070a5c5?auto=format&fit=crop&w=800&q=80', '电子产品', 'AVAILABLE', 1205, NOW()),
