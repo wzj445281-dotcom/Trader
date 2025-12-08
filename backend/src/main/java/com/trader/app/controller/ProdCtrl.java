@@ -6,6 +6,8 @@ import com.trader.app.service.ProdService;
 import com.trader.app.util.Result;
 import com.trader.app.mapper.ProdMapper;
 import com.trader.app.mapper.FavMapper;
+import com.trader.app.mapper.NotificationMapper; // <-- 新增导入
+import com.trader.app.entity.Notification; // <-- 新增导入
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +28,7 @@ public class ProdCtrl {
     // 依然保留 Mapper 用于一些简单查询，或者也应该移入 Service
     @Autowired private ProdMapper prodMapper;
     @Autowired private FavMapper favMapper;
+    @Autowired private NotificationMapper notificationMapper; // <-- 正确注入 NotificationMapper
 
     @PostMapping("/uploadImg")
     public Result<String> uploadImg(@RequestParam("file") MultipartFile file) throws IOException {
@@ -61,6 +64,22 @@ public class ProdCtrl {
     public Result<List<Prod>> listByDistance(@RequestParam double lat, @RequestParam double lng){
         return Result.ok(prodService.listByDistance(lat, lng));
     }
+
+    // 通知相关 (修复并添加安全校验)
+    @GetMapping("/notifications/{userId}")
+    public Result<List<Notification>> getNotes(@PathVariable Long userId){
+        Long currentUid = getCurrentUserId();
+        // 确保只有当前登录的用户才能查看自己的通知
+        if (currentUid == null || !currentUid.equals(userId)) {
+            return Result.fail("Unauthorized access to notifications");
+        }
+
+        // 查询当前用户的通知，并按创建时间倒序
+        QueryWrapper<Notification> w = new QueryWrapper<>();
+        w.eq("user_id", userId).orderByDesc("created_at");
+        return Result.ok(notificationMapper.selectList(w));
+    }
+
 
     // --- Helper ---
     private Long getCurrentUserId() {
@@ -98,7 +117,4 @@ public class ProdCtrl {
         w.orderByDesc("view_count").last("LIMIT " + (n==null?6:n));
         return Result.ok(prodMapper.selectList(w));
     }
-
-    // 省略 comment/report/notification 等代码，实际优化需全部迁移到 Service
-    // 为保证文件完整性，这里假设其他辅助 Controller 逻辑不变
 }

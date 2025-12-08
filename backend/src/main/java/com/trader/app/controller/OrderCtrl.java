@@ -1,6 +1,10 @@
 package com.trader.app.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.trader.app.entity.OrderEntity;
+import com.trader.app.entity.OrderItem;
+import com.trader.app.mapper.OrderItemMapper;
+import com.trader.app.mapper.OrderMapper;
 import com.trader.app.service.OrderService;
 import com.trader.app.util.JwtUtil;
 import com.trader.app.util.Result;
@@ -16,18 +20,15 @@ import java.util.stream.Collectors;
 public class OrderCtrl {
 
     @Autowired OrderService orderService;
+    @Autowired OrderMapper orderMapper;
+    @Autowired OrderItemMapper orderItemMapper;
 
-    // 升级：支持从购物车批量下单
     @PostMapping("/create")
     public Result<OrderEntity> create(@RequestHeader("Authorization") String token, @RequestBody Map<String, Object> body) {
         Long uid = JwtUtil.parseUserId(token);
         String address = (String) body.get("address");
-        // 从 JSON 中获取 List<Integer>
         List<Integer> ids = (List<Integer>) body.get("cartItemIds");
-
-        // 转换类型 List<Integer> to List<Long>
         List<Long> longIds = ids.stream().map(Long::valueOf).collect(Collectors.toList());
-
         return Result.ok(orderService.createOrderFromCart(uid, address, longIds));
     }
 
@@ -52,5 +53,25 @@ public class OrderCtrl {
         return Result.ok("确认收货成功");
     }
 
-    // TODO: 完善获取订单列表、订单详情的接口，以便个人中心调用。
+    // 🔥 新增：取消订单接口
+    @PostMapping("/cancel/{orderId}")
+    public Result<String> cancel(@RequestHeader("Authorization") String token, @PathVariable Long orderId) {
+        Long uid = JwtUtil.parseUserId(token);
+        orderService.cancelOrder(uid, orderId);
+        return Result.ok("订单已取消");
+    }
+
+    @GetMapping("/my")
+    public Result<List<OrderEntity>> myOrders(@RequestHeader("Authorization") String token) {
+        Long uid = JwtUtil.parseUserId(token);
+        QueryWrapper<OrderEntity> q = new QueryWrapper<>();
+        q.eq("buyer_id", uid).or().eq("seller_id", uid);
+        q.orderByDesc("created_at");
+        List<OrderEntity> orders = orderMapper.selectList(q);
+        for (OrderEntity o : orders) {
+            List<OrderItem> items = orderItemMapper.selectList(new QueryWrapper<OrderItem>().eq("order_id", o.getId()));
+            o.setItems(items);
+        }
+        return Result.ok(orders);
+    }
 }

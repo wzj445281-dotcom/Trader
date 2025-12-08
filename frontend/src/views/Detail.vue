@@ -26,23 +26,30 @@
 
         <div class="meta-info">
           <div class="meta-item"><span class="label">分类：</span><span>{{ p.category }}</span></div>
-          <div class="meta-item"><span class="label">状态：</span><el-tag type="success">{{ p.status }}</el-tag></div>
-          <div class="meta-item"><span class="label">库存：</span><span>{{ p.stock }} 件</span></div>
+          <div class="meta-item">
+            <span class="label">库存：</span>
+            <el-tag :type="p.stock > 0 ? 'success' : 'danger'">{{ p.stock > 0 ? '有货 ('+p.stock+')' : '缺货' }}</el-tag>
+          </div>
+          <div class="meta-item"><span class="label">发布人：</span>用户 {{ p.userId }}</div>
           <div class="meta-item"><span class="label">发布时间：</span><span>{{ formatTime(p.createdAt) }}</span></div>
         </div>
 
         <div class="actions">
-          <el-button type="danger" size="large" icon="ShoppingCart" @click="handleBuy" :loading="buying" :disabled="!p.stock || p.stock <= 0">
-            {{ (!p.stock || p.stock <= 0) ? '暂时缺货' : '立即购买' }}
+          <el-button type="danger" size="large" icon="ShoppingCart" @click="handleBuy" :disabled="!p.stock || p.stock <= 0">
+            {{ (!p.stock || p.stock <= 0) ? '已售罄' : '加入购物车' }}
           </el-button>
           <el-button type="primary" size="large" plain icon="Star" @click="favIt">收藏</el-button>
           <el-button size="large" icon="ChatDotRound" @click="contactSeller">联系卖家</el-button>
+          <!-- 🔥 新增举报按钮 -->
+          <el-button size="large" type="warning" link @click="reportDialogVisible = true">举报商品</el-button>
         </div>
+
         <el-divider content-position="left">商品描述</el-divider>
         <div class="description">{{ p.descr }}</div>
       </div>
     </div>
 
+    <!-- 留言区保持不变 -->
     <div class="comments-section">
       <h3>留言区</h3>
       <div class="comment-input">
@@ -63,6 +70,21 @@
         </div>
       </div>
     </div>
+
+    <!-- 🔥 新增举报弹窗 -->
+    <el-dialog v-model="reportDialogVisible" title="举报商品" width="30%">
+      <el-form>
+        <el-form-item label="举报理由">
+          <el-input v-model="reportReason" type="textarea" placeholder="请描述违规情况..." />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="reportDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="submitReport">提交</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
   <el-empty v-else description="加载中..." />
 </template>
@@ -72,7 +94,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { View, ShoppingCart, Star, ChatDotRound } from '@element-plus/icons-vue'
-import api, { detail, fav } from '../api' // 🔥 显式引入 api
+import { detail, fav } from '../api'
 
 const route = useRoute()
 const router = useRouter()
@@ -81,13 +103,16 @@ const comments = ref([])
 const newComment = ref('')
 const newRating = ref(5)
 const currentImg = ref('')
-const buying = ref(false)
+
+// 举报相关状态
+const reportDialogVisible = ref(false)
+const reportReason = ref('')
 
 const imgList = computed(() => p.value?.images ? p.value.images.split(',') : [])
 
 onMounted(async () => {
   await loadData()
-  if (p.value) api.post('/prod/view/' + p.value.id)
+  if (p.value) { try { window.api.post('/prod/view/' + p.value.id) } catch(e){} }
 })
 
 const loadData = async () => {
@@ -96,64 +121,87 @@ const loadData = async () => {
     if (r.data.code === 0) {
       p.value = r.data.data
       if (imgList.value.length > 0) currentImg.value = imgList.value[0]
-    }
-    const rc = await api.get('/prod/comments/' + route.params.id)
+    } else { ElMessage.error('商品不存在或已下架') }
+    const rc = await window.api.get('/prod/comments/' + route.params.id)
     if (rc.data.code === 0) comments.value = rc.data.data
-  } catch (e) {
-    ElMessage.error('数据加载失败，请检查后端服务')
-  }
+  } catch(e) { ElMessage.error('加载失败') }
+}
+
+const fmt = (s) => s // 图片路径处理
+
+const formatTime = (time) => {
+  if (!time) return ''
+  if (Array.isArray(time)) return `${time[0]}-${time[1]}-${time[2]}`
+  return new Date(time).toLocaleDateString()
+}
+
+const favIt = async () => {
+  const user = JSON.parse(localStorage.getItem('trader_user'))
+  if (!user) { ElMessage.warning('请先登录'); return router.push('/login') }
+  try {
+    const r = await fav({ prodId: p.value.id })
+    if (r.data.code === 0) ElMessage.success('已加入收藏')
+    else ElMessage.error(r.data.msg)
+  } catch(e) { ElMessage.error('操作失败') }
+}
+
+const postComment = async () => {
+  const user = JSON.parse(localStorage.getItem('trader_user'))
+  if (!user) return router.push('/login')
+  if (!newComment.value.trim()) return ElMessage.warning('请输入内容')
+  try {
+    const payload = { userId: user.id, prodId: p.value.id, content: newComment.value, rating: newRating.value }
+    const r = await window.api.post('/prod/comment', payload)
+    if (r.data.code === 0) {
+      ElMessage.success('留言成功')
+      newComment.value = ''
+      const rc = await window.api.get('/prod/comments/' + p.value.id)
+      if (rc.data.code === 0) comments.value = rc.data.data
+    }
+  } catch(e) { ElMessage.error('留言失败') }
 }
 
 const handleBuy = async () => {
   const user = JSON.parse(localStorage.getItem('trader_user'))
-  if (!user) { ElMessage.warning('请先登录'); return router.push('/login') }
-
-  buying.value = true
+  if (!user) return router.push('/login')
   try {
-    // 🔥 使用显式 api 对象，增加错误捕获
-    const r = await api.post('/prod/cart/add', { userId: user.id, prodId: p.value.id, qty: 1 })
-    if (r.data.code === 0) {
-      ElMessage.success('已加入购物车')
-      router.push('/cart')
-    } else {
-      ElMessage.error(r.data.msg || '添加失败')
-    }
-  } catch (e) {
-    console.error(e)
-    ElMessage.error('请求失败: ' + (e.response?.data?.msg || e.message))
-  } finally {
-    buying.value = false
+    const r = await window.api.post('/prod/cart/add', { userId: user.id, prodId: p.value.id, qty: 1 })
+    if (r.data.code === 0) { ElMessage.success('已加入购物车'); router.push('/cart') }
+    else { ElMessage.error(r.data.msg) }
+  } catch(e) {
+    if(e.response && e.response.status === 401) router.push('/login')
+    else ElMessage.error('服务不可用')
   }
 }
 
-// ... 其他方法保持不变 (fmt, formatTime, favIt, postComment, contactSeller) ...
-const fmt = (s) => s && s.startsWith('/uploads/') ? 'http://localhost:8080' + s : s
-const formatTime = (time) => time ? (Array.isArray(time) ? `${time[0]}-${time[1]}-${time[2]}` : new Date(time).toLocaleDateString()) : ''
-const favIt = async () => {
-  const user = JSON.parse(localStorage.getItem('trader_user'))
-  if (!user) { ElMessage.warning('请先登录'); return router.push('/login') }
-  const r = await fav({ prodId: p.value.id })
-  if (r.data.code === 0) ElMessage.success('已加入收藏')
-}
-const postComment = async () => {
-  const user = JSON.parse(localStorage.getItem('trader_user'))
-  if (!user) { ElMessage.warning('请先登录'); return router.push('/login') }
-  if (!newComment.value.trim()) return ElMessage.warning('请输入内容')
-  const payload = { userId: user.id, prodId: p.value.id, content: newComment.value, rating: newRating.value }
-  const r = await api.post('/prod/comment', payload)
-  if (r.data.code === 0) {
-    ElMessage.success('留言成功'); newComment.value = '';
-    const rc = await api.get('/prod/comments/' + p.value.id); if (rc.data.code === 0) comments.value = rc.data.data
-  }
-}
 const contactSeller = () => {
-  const user = JSON.parse(localStorage.getItem('trader_user')); if (!user) return router.push('/login');
-  router.push('/chat'); ElMessage.info('聊天功能开发中，请先进入聊天室列表')
+  const user = JSON.parse(localStorage.getItem('trader_user'))
+  if (!user) return router.push('/login')
+  router.push('/chat')
+  // 提示用户复制 ID
+  ElMessage.info(`卖家ID是 ${p.value.userId}，请在聊天室输入该ID`)
+}
+
+// 🔥 新增：提交举报逻辑
+const submitReport = async () => {
+  if(!reportReason.value.trim()) return ElMessage.warning('请输入理由');
+  try {
+    const r = await window.api.post('/prod/report', { prodId: p.value.id, reason: reportReason.value });
+    if(r.data.code===0) {
+      ElMessage.success('举报已提交');
+      reportDialogVisible.value = false;
+      reportReason.value = '';
+    } else {
+      ElMessage.error(r.data.msg);
+    }
+  } catch(e) { ElMessage.error('提交失败'); }
 }
 </script>
 
 <style scoped>
+/* 样式保持不变 */
 .detail-container { padding: 20px; background: #fff; border-radius: 8px; }
+.breadcrumb { margin-bottom: 20px; }
 .product-main { display: flex; gap: 40px; margin-bottom: 40px; }
 .gallery { width: 400px; flex-shrink: 0; }
 .main-img { width: 100%; height: 400px; border: 1px solid #eee; border-radius: 4px; margin-bottom: 10px; background: #f9f9f9; }

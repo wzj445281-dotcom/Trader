@@ -73,6 +73,7 @@ export const fav = d => api.post('/prod/fav', d);
 export const favs = id => api.get('/prod/favs/' + id);
 export const refreshToken = (refresh) => api.post('/auth/refresh', { refresh });
 export const logoutApi = (refresh) => api.post('/auth/logout', { refresh });
-export const getCart = (userId) => api.get('/prod/cart/' + userId);
+// 🔥 接口修改：不再传递 userId
+export const getCart = () => api.get('/prod/cart/list');
 
 export default api;

@@ -1,10 +1,3 @@
--- ==========================================
--- Trader 校园二手交易平台 - 完整数据库结构 (最终报告版)
--- 修正说明：
--- 1. 统一移除 AUTO_INCREMENT，配合 MyBatis-Plus 雪花算法(ASSIGN_ID)
--- 2. 增加外键约束 (Foreign Keys) 以保证数据完整性
--- 3. 统一字符集与引擎配置
--- ==========================================
 
 CREATE DATABASE IF NOT EXISTS trader DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 USE trader;
@@ -176,14 +169,40 @@ CREATE TABLE `chat_message` (
   KEY `idx_chat_users` (`from_user_id`,`to_user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='聊天记录表';
 
--- ==================== 数据注入 (测试用) ====================
--- 注意：这里的ID是手动指定的，实际运行时Java代码会生成更大的雪花ID
-INSERT INTO `user` (id, username, password, email, phone, role, avatar) VALUES
-(1001, 'alice', '$2a$10$7QeYh1bV1J8KZq8Zr1aWJeYkqg3h2VZr3fY8Qz0b3Bz1b2c3d4eFG', 'alice@edu.com', '13800138001', 'USER', 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'),
-(1002, 'wzj',   '$2a$10$7QeYh1bV1J8KZq8Zr1aWJeYkqg3h2VZr3fY8Qz0b3Bz1b2c3d4eFG', 'wzj@edu.com',   '13800138002', 'ADMIN', 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'),
-(1003, 'carol', '$2a$10$7QeYh1bV1J8KZq8Zr1aWJeYkqg3h2VZr3fY8Qz0b3Bz1b2c3d4eFG', 'carol@edu.com', '13800138003', 'USER', NULL);
+-- ==================== 数据注入 (使用 test2.sql 完整数据) ====================
+-- 密码统一为: password123 (哈希值：$2a$10$7QeYh1bV1J8KZq8Zr1aWJeYkqg3h2VZr3fY8Qz0b3Bz1b2c3d4eFG)
 
-INSERT INTO `prod` (id, user_id, title, descr, price, stock, images, category, status, created_at) VALUES
-(2001, 1001, 'iPhone 13 Pro Max', '闲置手机，99新', 4500.00, 1, 'https://images.unsplash.com/photo-1632661674596-df8be070a5c5', '电子产品', 'AVAILABLE', NOW()),
-(2002, 1001, 'Sony 耳机', '降噪耳机', 1200.00, 1, 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb', '电子产品', 'AVAILABLE', NOW()),
-(2004, 1003, '考研数学全套', '带笔记，祝上岸', 50.00, 1, 'https://images.unsplash.com/photo-1544947950-fa07a98d237f', '书籍', 'AVAILABLE', NOW());
+INSERT INTO `user` (id, username, password, email, phone, role, avatar) VALUES
+(1001, 'alice', '$2a$10$n7lcB1X5sjwmKWOrIiVn2uOYd5udCtVph/XHSWYn5SQPXhuEirl06', 'alice@edu.com', '13800138001', 'USER', 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'),
+(1002, 'bob',   '$2a$10$n7lcB1X5sjwmKWOrIiVn2uOYd5udCtVph/XHSWYn5SQPXhuEirl06', 'bob@edu.com',   '13800138002', 'USER', 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'),
+(1003, 'admin', '$2a$10$n7lcB1X5sjwmKWOrIiVn2uOYd5udCtVph/XHSWYn5SQPXhuEirl06', 'admin@edu.com', '13800138000', 'ADMIN', 'https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9dpng.png');
+
+INSERT INTO `prod` (id, user_id, title, descr, price, stock, images, category, status, view_count, created_at) VALUES
+(2001, 1002, 'iPhone 13 Pro Max 256G 远峰蓝', '换 15 了所以出。国行原装，电池健康 88%，一直带壳贴膜，无划痕。附送三个手机壳和原装充电线。', 4500.00, 1, 'https://images.unsplash.com/photo-1632661674596-df8be070a5c5?auto=format&fit=crop&w=800&q=80', '电子产品', 'AVAILABLE', 1205, NOW()),
+(2002, 1002, 'Sony WH-1000XM4 降噪耳机', '图书馆考研神器！降噪效果无敌，成色 95 新，耳罩无磨损。', 1200.00, 1, 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&w=800&q=80', '电子产品', 'AVAILABLE', 890, NOW()),
+(2003, 1003, '考研数学李永樂全套资料', '24版复习全书+660题，上面有学霸笔记，字跡工整。祝学弟学妹上岸！', 45.00, 1, 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=800&q=80', '书籍', 'AVAILABLE', 330, NOW()),
+(2004, 1003, '宿舍用小电锅 (不跳闸)', '功率 600W，煮面、小火锅必备。毕业带不走了，送汤勺和碗。', 35.00, 1, 'https://images.unsplash.com/photo-1584269600519-112d071b35e6?auto=format&fit=crop&w=800&q=80', '生活用品', 'AVAILABLE', 210, NOW()),
+(2005, 1002, 'Nike Air Force 1 空军一号', '尺码 42，得物购入，穿过两次有点挤脚。支持鉴定，假一赔三。', 400.00, 1, 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=800&q=80', '服飾', 'AVAILABLE', 560, NOW()),
+(2006, 1003, '捷安特山地车', '海大校区代步神器，刹车灵敏，变速好用。送一把U型锁。', 350.00, 1, 'https://images.unsplash.com/photo-1576435728678-35d0160e8c97?auto=format&fit=crop&w=800&q=80', '其他', 'AVAILABLE', 99, NOW());
+
+INSERT INTO `cart_item` (id, user_id, prod_id, qty) VALUES
+(5001, 1001, 2004, 1),
+(5002, 1001, 2005, 1);
+
+INSERT INTO `order_entity` (id, buyer_id, seller_id, status, total_amount, address, created_at) VALUES
+(3001, 1001, 1002, 'COMPLETED', 1200.00, '海大主校区海宁B栋301', 1701000000000),
+(3002, 1001, 1003, 'PAID', 45.00, '海大主校区海宁B栋301', 1701230000000);
+
+INSERT INTO `order_item` (id, order_id, prod_id, prod_name, prod_image, price, quantity) VALUES
+(4001, 3001, 2002, 'Sony WH-1000XM4 降噪耳机', 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&w=800&q=80', 1200.00, 1),
+(4002, 3002, 2003, '考研数学李永樂全套资料', 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=800&q=80', 45.00, 1);
+
+INSERT INTO `chat_message` (id, from_user_id, to_user_id, message, created_at) VALUES
+(6001, 1002, 1001, '你好，请问你发布的雅诗兰黛还在吗？', 1701234567000),
+(6002, 1001, 1002, '在的，专柜正品，未拆封。', 1701234577000),
+(6003, 1002, 1001, '我是学生，预算有限，450 可以吗？', 1701234587000),
+(6004, 1001, 1002, '可以，海大校内面交吧。', 1701234597000);
+
+INSERT INTO `comment` (id, user_id, prod_id, content, rating, created_at) VALUES
+(7001, 1002, 2001, '楼主，电池健康度多少？有维修记录吗？', 5, 1701234567000),
+(7002, 1003, 2001, '排队，如果楼上不要踢我。', 5, 1701240000000);

@@ -17,6 +17,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- ==========================================
 -- 1. 初始化演示用户 (密码统一为: password123)
 -- ==========================================
+-- 哈希值 $2a$10$7QeYh1bV1J8KZq8Zr1aWJeYkqg3h2VZr3fY8Qz0b3Bz1b2c3d4eFG 对应明文密码 'password123'
 INSERT INTO `user` (id, username, password, email, phone, role, avatar) VALUES
 (1001, 'alice', '$2a$10$7QeYh1bV1J8KZq8Zr1aWJeYkqg3h2VZr3fY8Qz0b3Bz1b2c3d4eFG', 'alice@edu.com', '13800138001', 'USER', 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'),
 (1002, 'bob',   '$2a$10$7QeYh1bV1J8KZq8Zr1aWJeYkqg3h2VZr3fY8Qz0b3Bz1b2c3d4eFG', 'bob@edu.com',   '13800138002', 'USER', 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'),

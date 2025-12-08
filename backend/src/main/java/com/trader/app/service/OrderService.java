@@ -45,7 +45,6 @@ public class OrderService {
 
             if (sellerId == null) sellerId = p.getUserId();
 
-            // 3.1 创建明细
             OrderItem item = new OrderItem();
             item.setOrderId(order.getId());
             item.setProdId(p.getId());
@@ -57,17 +56,13 @@ public class OrderService {
 
             totalAmount = totalAmount.add(BigDecimal.valueOf(p.getPrice()).multiply(new BigDecimal(ci.getQty())));
 
-            // 3.2 核心修改：扣减库存 (符合报告 5.3.1)
+            // 扣减库存
             int currentStock = p.getStock() == null ? 0 : p.getStock();
             if (currentStock < ci.getQty()) {
                 throw new IllegalArgumentException("商品 [" + p.getTitle() + "] 库存不足");
             }
             p.setStock(currentStock - ci.getQty());
-
-            // 库存归零则下架
-            if (p.getStock() <= 0) {
-                p.setStatus("LOCKED");
-            }
+            if (p.getStock() <= 0) p.setStatus("LOCKED");
             prodMapper.updateById(p);
         }
 
@@ -83,6 +78,7 @@ public class OrderService {
     public void payOrder(Long userId, Long orderId) {
         OrderEntity o = orderMapper.selectById(orderId);
         if (o == null || !o.getBuyerId().equals(userId)) throw new IllegalArgumentException("无权操作");
+        if (!"CREATED".equals(o.getStatus())) throw new IllegalArgumentException("订单状态异常");
 
         o.setStatus("PAID");
         orderMapper.updateById(o);
@@ -115,6 +111,41 @@ public class OrderService {
         o.setStatus("COMPLETED");
         orderMapper.updateById(o);
         notify(o.getSellerId(), "交易完成", "订单号：" + orderId);
+    }
+
+    // 🔥 新增：取消订单
+    @Transactional(rollbackFor = Exception.class)
+    public void cancelOrder(Long userId, Long orderId) {
+        OrderEntity o = orderMapper.selectById(orderId);
+        if (o == null) throw new IllegalArgumentException("订单不存在");
+
+        // 只有买家或卖家可以取消
+        if (!o.getBuyerId().equals(userId) && !o.getSellerId().equals(userId)) {
+            throw new IllegalArgumentException("无权操作");
+        }
+
+        // 只有 CREATED 状态可以取消 (已支付的需要走退款流程，这里简化)
+        if (!"CREATED".equals(o.getStatus())) {
+            throw new IllegalArgumentException("当前状态无法取消");
+        }
+
+        o.setStatus("CANCELLED");
+        orderMapper.updateById(o);
+
+        // 恢复库存
+        List<OrderItem> items = orderItemMapper.selectList(new QueryWrapper<OrderItem>().eq("order_id", orderId));
+        for (OrderItem item : items) {
+            Prod p = prodMapper.selectById(item.getProdId());
+            if (p != null) {
+                p.setStock(p.getStock() + item.getQuantity());
+                if ("LOCKED".equals(p.getStatus())) {
+                    p.setStatus("AVAILABLE");
+                }
+                prodMapper.updateById(p);
+            }
+        }
+
+        notify(o.getSellerId().equals(userId) ? o.getBuyerId() : o.getSellerId(), "订单已取消", "订单号：" + orderId);
     }
 
     private void notify(Long uid, String title, String body) {

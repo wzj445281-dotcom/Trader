@@ -5,14 +5,15 @@
       <el-table-column type="selection" width="55" />
       <el-table-column label="商品信息" min-width="400">
         <template #default="scope">
-          <div class="cart-prod-info" v-if="scope.row.prodTitle">
+          <!-- 🔥 移除 v-if 判断，即使加载失败，Pinia Store 也会提供默认值 -->
+          <div class="cart-prod-info">
             <el-image :src="fmt(scope.row.prodImage)" fit="cover" style="width:50px;height:50px;margin-right:10px;vertical-align:middle;border-radius:4px"/>
             <span class="prod-title">{{ scope.row.prodTitle }}</span>
           </div>
-          <div v-else>加载中...</div>
         </template>
       </el-table-column>
       <el-table-column label="单价" width="150">
+        <!-- 🔥 使用可选链操作符确保安全访问价格 -->
         <template #default="scope">¥{{ scope.row.prodPrice?.toFixed(2) }}</template>
       </el-table-column>
       <el-table-column prop="qty" label="数量" width="150" />
@@ -64,10 +65,14 @@ const handleSelectionChange = (val) => {
 
 const removeItem = async (id) => {
   try {
-    await api.delete('/prod/cart/' + id);
-    ElMessage.success('已删除')
-    cartStore.fetchCart()
-  } catch(e) { ElMessage.error('删除失败') }
+    const r = await api.delete('/prod/cart/' + id); // 使用 api 实例
+    if (r.data.code === 0) {
+      ElMessage.success('已删除');
+      cartStore.fetchCart();
+    } else {
+      ElMessage.error(r.data.msg || '删除失败');
+    }
+  } catch(e) { ElMessage.error('删除失败: ' + (e.response?.data?.msg || e.message)) }
 }
 
 const checkout = async () => {
@@ -86,11 +91,11 @@ const checkout = async () => {
     try {
       const r = await api.post('/order/create', { address, cartItemIds })
       if (r.data.code === 0) {
-        ElMessage.success('下单成功')
-        cartStore.fetchCart()
-        router.push('/profile?tab=orders')
+        ElMessage.success('下单成功，请前往个人中心查看订单并支付')
+        cartStore.fetchCart() // 刷新购物车，因为已下单的商品项会被清空
+        router.push('/profile') // 跳到个人中心
       } else {
-        ElMessage.error(r.data.msg)
+        ElMessage.error(r.data.msg || '下单失败')
       }
     } catch(e) { ElMessage.error('下单失败: ' + (e.response?.data?.msg || e.message)) }
   }
