@@ -84,12 +84,29 @@ public class CartCtrl {
         Long currentUid = JwtUtil.parseUserId(token);
         if (currentUid == null) return Result.fail("Not logged in");
 
-        // 校验权限：确保删除的是自己的购物车项
-        QueryWrapper<CartItem> q = new QueryWrapper<>();
-        q.eq("id", id).eq("user_id", currentUid);
-        if (cartItemMapper.delete(q) == 0) {
-            return Result.fail("Cart item not found or unauthorized deletion");
+        System.out.println("正在尝试删除 - 用户ID: " + currentUid + ", 传入参数ID: " + id);
+
+        // 尝试 1: 假设前端传的是【购物车记录的主键 ID】
+        QueryWrapper<CartItem> q1 = new QueryWrapper<>();
+        q1.eq("id", id).eq("user_id", currentUid);
+        int rows1 = cartItemMapper.delete(q1);
+
+        if (rows1 > 0) {
+            return Result.ok("Deleted successfully (by Cart ID)");
         }
-        return Result.ok("Deleted");
+
+        // 尝试 2: 假设前端传的是【商品 ID (good_id)】
+        // 很多时候前端列表渲染的是商品信息，点删除时传的是商品的ID
+        QueryWrapper<CartItem> q2 = new QueryWrapper<>();
+        q2.eq("good_id", id).eq("user_id", currentUid);
+        int rows2 = cartItemMapper.delete(q2);
+
+        if (rows2 > 0) {
+            return Result.ok("Deleted successfully (by Good ID)");
+        }
+
+        // 如果两次都删不掉，才返回失败
+        System.err.println("删除失败 - 未找到对应记录。User: " + currentUid + ", Param ID: " + id);
+        return Result.fail("Cart item not found or unauthorized deletion");
     }
 }

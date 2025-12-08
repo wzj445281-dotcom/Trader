@@ -27,11 +27,21 @@ public class OrderCtrl {
     public Result<OrderEntity> create(@RequestHeader("Authorization") String token, @RequestBody Map<String, Object> body) {
         Long uid = JwtUtil.parseUserId(token);
         String address = (String) body.get("address");
-        List<Integer> ids = (List<Integer>) body.get("cartItemIds");
-        List<Long> longIds = ids.stream().map(Long::valueOf).collect(Collectors.toList());
+
+        // 🔥 修复：安全地处理数字列表，防止 ClassCastException (Integer vs Long)
+        // 1. 使用 List<?> 接收，不强制转换泛型
+        List<?> rawIds = (List<?>) body.get("cartItemIds");
+        if (rawIds == null) {
+            return Result.fail("未选择商品");
+        }
+
+        // 2. 统一通过 toString() 转为 Long，无论原始类型是 Integer 还是 Long 都能兼容
+        List<Long> longIds = rawIds.stream()
+                .map(obj -> Long.valueOf(obj.toString()))
+                .collect(Collectors.toList());
+
         return Result.ok(orderService.createOrderFromCart(uid, address, longIds));
     }
-
     @PostMapping("/pay/{orderId}")
     public Result<String> pay(@RequestHeader("Authorization") String token, @PathVariable Long orderId) {
         Long uid = JwtUtil.parseUserId(token);

@@ -3,7 +3,7 @@ package com.trader.app.config;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
+import org.springframework.http.HttpMethod; // 导入 HttpMethod
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -21,30 +21,35 @@ public class SecurityCfg {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // 🔥 关键修复：显式开启 CORS 并使用自定义源
+                // 1. CORS 配置
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
-                // 关闭 CSRF (REST API 不需要)
+                // 2. 关闭 CSRF
                 .csrf(AbstractHttpConfigurer::disable)
-                // 配置路由权限
+                // 3. 权限配置
                 .authorizeHttpRequests(auth -> auth
-                        // 允许匿名访问的接口
-                        .requestMatchers(
-                                "/api/auth/**",
-                                "/api/prod/list",
-                                "/api/prod/view/**",
-                                "/api/prod/recommend/**",
-                                "/api/prod/comments/**",
-                                "/api/prod/{id}",
-                                "/api/prod/listByDistance",
-                                "/uploads/**",
-                                "/ws/**"
-                        ).permitAll()
-                        // 管理员接口
+                        // === 0. 🔥 全局放行所有 OPTIONS 请求 (解决跨域 403) ===
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // === 1. 静态资源与 WebSocket ===
+                        .requestMatchers("/uploads/**", "/ws/**").permitAll()
+
+                        // === 2. 认证接口 (登录/注册) ===
+                        .requestMatchers("/api/auth/**").permitAll()
+
+                        // === 3. 🔥 显式放行评论接口 (不限 GET/POST，防止误杀) ===
+                        // 把它放在通配符前面，确保优先级
+                        .requestMatchers("/api/prod/comments/**").permitAll()
+
+                        // === 4. 放行其他商品信息的读取 (列表、详情等) ===
+                        .requestMatchers(HttpMethod.GET, "/api/prod/**").permitAll()
+
+                        // === 管理员接口 ===
                         .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
-                        // 购物车、下单等其他接口都需要登录
+
+                        // === 其他所有请求都需要登录 ===
                         .anyRequest().authenticated()
                 )
-                // 添加 JWT 过滤器
+                // 4. 添加 JWT 过滤器
                 .addFilterBefore(new JwtFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
